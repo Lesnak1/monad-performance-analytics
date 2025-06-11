@@ -381,18 +381,22 @@ export class MonadRPCService {
       const block = await this.provider.getBlock(blockNumber, true)
       if (!block) return null
 
-      return {
+      const formattedBlock = {
         number: block.number,
-        hash: block.hash,
+        hash: block.hash || '',
         parentHash: block.parentHash,
         timestamp: new Date(block.timestamp * 1000),
-        gasUsed: block.gasUsed.toString(),
-        gasLimit: block.gasLimit.toString(),
-        transactionCount: block.transactions?.length || 0,
-        transactions: block.transactions || [],
+        gasUsed: block.gasUsed?.toString() || '0',
+        gasLimit: block.gasLimit?.toString() || '0',
+        baseFeePerGas: block.baseFeePerGas?.toString() || '0',
         difficulty: block.difficulty?.toString() || '0',
-        totalDifficulty: '0' // This might not be available in all networks
+        totalDifficulty: '0', // Not available in all networks
+        miner: block.miner || '',
+        transactions: [...(block.transactions || [])],
+        transactionCount: block.transactions?.length || 0
       }
+
+      return formattedBlock
     } catch (error) {
       logger.error(`Error fetching block ${blockNumber}:`, error)
       return null

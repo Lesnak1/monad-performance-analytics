@@ -19,7 +19,7 @@ export class DatabaseService {
 
     // Log database queries in development
     if (process.env.NODE_ENV === 'development') {
-      this.prisma.$on('query', (e) => {
+      this.prisma.$on('query', (e: any) => {
         logger.debug('Database Query:', {
           query: e.query,
           params: e.params,
@@ -600,7 +600,7 @@ export class DatabaseService {
         status: 'unhealthy',
         details: {
           connected: false,
-          error: error.message,
+          error: (error as Error).message,
           timestamp: new Date().toISOString()
         }
       }

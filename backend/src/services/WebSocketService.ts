@@ -229,7 +229,7 @@ export class WebSocketService {
       if (callback && typeof callback === 'function') {
         callback({
           success: false,
-          error: error.message,
+          error: (error as Error).message,
           timestamp: new Date().toISOString()
         })
       }
@@ -417,10 +417,17 @@ export class WebSocketService {
   }
 
   public broadcastToRoom(room: string, event: string, data: any): void {
-    this.io.to(room).emit(event, {
-      ...data,
-      timestamp: new Date().toISOString()
-    })
+    try {
+      this.io.to(room).emit(event, {
+        ...data,
+        timestamp: new Date().toISOString()
+      })
+    } catch (error) {
+      logger.error('Failed to broadcast to room:', {
+        room,
+        error: (error as Error).message,
+      })
+    }
   }
 
   public getConnectedUsersCount(): number {

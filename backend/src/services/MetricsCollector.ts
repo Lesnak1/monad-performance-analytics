@@ -236,8 +236,9 @@ export class MetricsCollector {
   }
 
   private emitAlertEvent(alert: Alert): void {
-    // This will be used by WebSocketService to broadcast alerts
-    process.emit('alert', alert)
+    // Emit alert event to other parts of the application
+    // Could integrate with notification systems, webhooks, etc.
+    logger.warn('Alert Event Emitted:', alert)
   }
 
   private async aggregateHourlyData(): Promise<void> {

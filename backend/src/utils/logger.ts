@@ -83,17 +83,25 @@ transports.push(
   })
 )
 
-// Create logger instance
-const logger = winston.createLogger({
+// Create logger instance with extended interface
+interface ExtendedLogger extends winston.Logger {
+  logRequest: (req: any, res: any, responseTime: number) => void
+  logPerformance: (operation: string, duration: number, metadata?: any) => void
+  logBlockchainEvent: (event: string, data: any) => void
+  logMetrics: (metrics: any) => void
+  logError: (error: Error, context?: any) => void
+}
+
+const baseLogger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   levels: logLevels,
   format: customFormat,
   transports,
   exitOnError: false,
-})
+}) as ExtendedLogger
 
 // Add request logging method
-logger.logRequest = (req: any, res: any, responseTime: number) => {
+baseLogger.logRequest = (req: any, res: any, responseTime: number) => {
   const logData = {
     method: req.method,
     url: req.url,
@@ -105,15 +113,15 @@ logger.logRequest = (req: any, res: any, responseTime: number) => {
   }
 
   if (res.statusCode >= 400) {
-    logger.error('HTTP Request Error', logData)
+    baseLogger.error('HTTP Request Error', logData)
   } else {
-    logger.http('HTTP Request', logData)
+    baseLogger.http('HTTP Request', logData)
   }
 }
 
 // Add performance logging
-logger.logPerformance = (operation: string, duration: number, metadata?: any) => {
-  logger.info('Performance Metric', {
+baseLogger.logPerformance = (operation: string, duration: number, metadata?: any) => {
+  baseLogger.info('Performance Metric', {
     operation,
     duration: `${duration}ms`,
     ...metadata,
@@ -122,8 +130,8 @@ logger.logPerformance = (operation: string, duration: number, metadata?: any) =>
 }
 
 // Add blockchain event logging
-logger.logBlockchainEvent = (event: string, data: any) => {
-  logger.info('Blockchain Event', {
+baseLogger.logBlockchainEvent = (event: string, data: any) => {
+  baseLogger.info('Blockchain Event', {
     event,
     data,
     timestamp: new Date().toISOString()
@@ -131,16 +139,16 @@ logger.logBlockchainEvent = (event: string, data: any) => {
 }
 
 // Add metrics logging
-logger.logMetrics = (metrics: any) => {
-  logger.info('Metrics Collection', {
+baseLogger.logMetrics = (metrics: any) => {
+  baseLogger.info('Metrics Collection', {
     metrics,
     timestamp: new Date().toISOString()
   })
 }
 
 // Add error tracking
-logger.logError = (error: Error, context?: any) => {
-  logger.error('Application Error', {
+baseLogger.logError = (error: Error, context?: any) => {
+  baseLogger.error('Application Error', {
     message: error.message,
     stack: error.stack,
     context,
@@ -149,7 +157,7 @@ logger.logError = (error: Error, context?: any) => {
 }
 
 // Handle uncaught exceptions
-logger.exceptions.handle(
+baseLogger.exceptions.handle(
   new winston.transports.File({
     filename: path.join(logsDir, 'exceptions.log'),
     format: customFormat
@@ -157,11 +165,11 @@ logger.exceptions.handle(
 )
 
 // Handle unhandled promise rejections
-logger.rejections.handle(
+baseLogger.rejections.handle(
   new winston.transports.File({
     filename: path.join(logsDir, 'rejections.log'),
     format: customFormat
   })
 )
 
-export default logger 
+export default baseLogger 

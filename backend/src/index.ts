@@ -11,20 +11,20 @@ import { Server as SocketIOServer } from 'socket.io'
 dotenv.config()
 
 // Import routes
-import apiRoutes from '../routes/api'
-import metricsRoutes from '../routes/metrics'
-import authRoutes from '../routes/auth'
+import apiRoutes from './routes/api'
+import metricsRoutes from './routes/metrics'
+import authRoutes from './routes/auth'
 
 // Import middleware
-import errorHandler from '../middleware/errorHandler'
-import rateLimiter from '../middleware/rateLimiter'
-import logger from '../utils/logger'
+import errorHandler from './middleware/errorHandler'
+import rateLimiter from './middleware/rateLimiter'
+import logger from './utils/logger'
 
 // Import services
-import { MonadRPCService } from '../services/MonadRPCService'
-import { MetricsCollector } from '../services/MetricsCollector'
-import { DatabaseService } from '../services/DatabaseService'
-import { WebSocketService } from '../services/WebSocketService'
+import { MonadRPCService } from './services/MonadRPCService'
+import { MetricsCollector } from './services/MetricsCollector'
+import { DatabaseService } from './services/DatabaseService'
+import { WebSocketService } from './services/WebSocketService'
 
 const app = express()
 const server = createServer(app)

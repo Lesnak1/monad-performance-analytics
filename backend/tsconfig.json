@@ -21,22 +21,15 @@
     "baseUrl": "./",
     "paths": {
       "@/*": ["src/*"],
-      "@controllers/*": ["controllers/*"],
-      "@middleware/*": ["middleware/*"],
-      "@routes/*": ["routes/*"],
-      "@services/*": ["services/*"],
-      "@utils/*": ["utils/*"],
-      "@config/*": ["config/*"]
+      "@middleware/*": ["src/middleware/*"],
+      "@routes/*": ["src/routes/*"],
+      "@services/*": ["src/services/*"],
+      "@utils/*": ["src/utils/*"],
+      "@config/*": ["src/config/*"]
     }
   },
   "include": [
-    "src/**/*",
-    "controllers/**/*",
-    "middleware/**/*",
-    "routes/**/*",
-    "services/**/*",
-    "utils/**/*",
-    "config/**/*"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
