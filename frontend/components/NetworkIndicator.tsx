@@ -15,12 +15,19 @@ interface NetworkIndicatorProps {
 export default function NetworkIndicator({ networkStatus, currentRpcIndex = 0 }: NetworkIndicatorProps) {
   const getNetworkInfo = () => {
     switch (networkStatus.chainId) {
-      case 10143:
+      case 41454:
         return {
           name: 'Monad Testnet',
           color: 'bg-cyber-blue',
           textColor: 'text-cyber-blue',
           type: 'TESTNET'
+        }
+      case 10143:
+        return {
+          name: 'Monad Devnet',
+          color: 'bg-cyber-purple',
+          textColor: 'text-cyber-purple',
+          type: 'DEVNET'
         }
       case 1:
         return {
@@ -31,10 +38,10 @@ export default function NetworkIndicator({ networkStatus, currentRpcIndex = 0 }:
         }
       case 31337:
         return {
-          name: 'Monad Devnet',
+          name: 'Local Testnet',
           color: 'bg-cyber-purple',
           textColor: 'text-cyber-purple',
-          type: 'DEVNET'
+          type: 'LOCAL'
         }
       default:
         return {
@@ -48,9 +55,9 @@ export default function NetworkIndicator({ networkStatus, currentRpcIndex = 0 }:
 
   const getRpcInfo = () => {
     const rpcNames = [
-      'Hypersync RPC',
-      'Official RPC',
-      'dRPC Backup'
+      'Monad Official RPC',
+      'Caldera RPC',
+      'WebSocket RPC'
     ]
     return rpcNames[currentRpcIndex] || 'Unknown RPC'
   }

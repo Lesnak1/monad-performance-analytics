@@ -2,244 +2,255 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { 
-  Activity, 
-  ArrowRight, 
+  Play, 
+  Pause, 
   ExternalLink, 
-  Clock,
-  Zap,
-  DollarSign,
-  Hash,
-  Eye,
+  ArrowUpRight, 
+  ArrowDownRight,
+  Filter,
+  RefreshCw,
   TrendingUp,
-  RefreshCw
+  Clock,
+  Users,
+  Zap
 } from 'lucide-react'
-
-interface Transaction {
-  id: string
-  hash: string
-  from: string
-  to: string
-  value: string
-  gasUsed: number
-  gasPrice: string
-  timestamp: number
-  blockNumber: number
-  type: 'transfer' | 'contract' | 'mint' | 'swap'
-  status: 'pending' | 'confirmed' | 'failed'
-}
+import { generateLiveTransaction, getExplorerUrl, type Transaction } from '../lib/monadData'
 
 interface LiveTransactionsProps {
-  networkConnected: boolean
+  isPlaying?: boolean
+  onToggle?: () => void
 }
 
-export default function LiveTransactions({ networkConnected }: LiveTransactionsProps) {
+export default function LiveTransactions({ isPlaying = true, onToggle }: LiveTransactionsProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [isLive, setIsLive] = useState(true)
+  const [isRunning, setIsRunning] = useState(isPlaying)
+  const [filter, setFilter] = useState<'all' | 'transfer' | 'contract' | 'swap' | 'mint'>('all')
+  const [stats, setStats] = useState({
+    totalTxs: 1692109232,
+    txsLast24h: 14256789,
+    avgGasPrice: 0.25,
+    successRate: 97.8,
+    topGasUser: '0x2f1e...8a4d'
+  })
 
-  // Simulate live transactions
+  // Enhanced transaction generation
   useEffect(() => {
-    if (!networkConnected || !isLive) return
-
-    const generateTransaction = (): Transaction => {
-      const types = ['transfer', 'contract', 'mint', 'swap'] as const
-      const type = types[Math.floor(Math.random() * types.length)]
-      
-      return {
-        id: Math.random().toString(36).substr(2, 9),
-        hash: `0x${Math.random().toString(16).substr(2, 8)}...${Math.random().toString(16).substr(2, 4)}`,
-        from: `0x${Math.random().toString(16).substr(2, 8)}...${Math.random().toString(16).substr(2, 4)}`,
-        to: `0x${Math.random().toString(16).substr(2, 8)}...${Math.random().toString(16).substr(2, 4)}`,
-        value: (Math.random() * 10).toFixed(4),
-        gasUsed: Math.floor(Math.random() * 100000) + 21000,
-        gasPrice: (Math.random() * 0.01 + 0.001).toFixed(6),
-        timestamp: Date.now(),
-        blockNumber: Math.floor(Math.random() * 1000) + 1240000,
-        type,
-        status: Math.random() > 0.95 ? 'failed' : 'confirmed'
-      }
-    }
+    if (!isRunning) return
 
     const interval = setInterval(() => {
-      const newTx = generateTransaction()
-      setTransactions(prev => [newTx, ...prev.slice(0, 19)]) // Keep last 20 transactions
-    }, Math.random() * 3000 + 1000) // Random interval 1-4 seconds
+      const newTx = generateLiveTransaction()
+      
+      setTransactions(prev => {
+        const updated = [newTx, ...prev]
+        return updated.slice(0, 20) // Keep last 20 transactions
+      })
+
+      // Update stats occasionally
+      if (Math.random() < 0.1) {
+        setStats(prev => ({
+          ...prev,
+          totalTxs: prev.totalTxs + Math.floor(Math.random() * 10) + 1,
+          txsLast24h: prev.txsLast24h + Math.floor(Math.random() * 5) + 1,
+          avgGasPrice: 0.1 + Math.random() * 0.3,
+          successRate: 96 + Math.random() * 4
+        }))
+      }
+    }, 1500 + Math.random() * 1000) // 1.5-2.5 second intervals
 
     return () => clearInterval(interval)
-  }, [networkConnected, isLive])
+  }, [isRunning])
 
-  const getTypeIcon = (type: Transaction['type']) => {
+  const handleToggle = () => {
+    setIsRunning(!isRunning)
+    onToggle?.()
+  }
+
+  const filteredTransactions = transactions.filter(tx => 
+    filter === 'all' || tx.type === filter
+  )
+
+  const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'transfer': return <ArrowRight className="w-4 h-4 text-cyber-blue" />
-      case 'contract': return <Activity className="w-4 h-4 text-cyber-purple" />
-      case 'mint': return <Zap className="w-4 h-4 text-cyber-green" />
-      case 'swap': return <TrendingUp className="w-4 h-4 text-cyber-pink" />
+      case 'transfer': return <ArrowUpRight className="w-3 h-3" />
+      case 'contract': return <Zap className="w-3 h-3" />
+      case 'swap': return <RefreshCw className="w-3 h-3" />
+      case 'mint': return <TrendingUp className="w-3 h-3" />
+      default: return <ArrowUpRight className="w-3 h-3" />
     }
   }
 
-  const getTypeColor = (type: Transaction['type']) => {
+  const getTypeColor = (type: string) => {
     switch (type) {
-      case 'transfer': return 'bg-cyber-blue/20 text-cyber-blue'
-      case 'contract': return 'bg-cyber-purple/20 text-cyber-purple'
-      case 'mint': return 'bg-cyber-green/20 text-cyber-green'
-      case 'swap': return 'bg-cyber-pink/20 text-cyber-pink'
+      case 'transfer': return 'text-cyber-blue'
+      case 'contract': return 'text-cyber-purple'
+      case 'swap': return 'text-cyber-green'
+      case 'mint': return 'text-cyber-yellow'
+      default: return 'text-white'
     }
   }
 
-  const formatTimeAgo = (timestamp: number) => {
-    const seconds = Math.floor((Date.now() - timestamp) / 1000)
-    if (seconds < 60) return `${seconds}s ago`
-    const minutes = Math.floor(seconds / 60)
-    return `${minutes}m ago`
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmed': return 'bg-cyber-green'
+      case 'pending': return 'bg-cyber-yellow'
+      case 'failed': return 'bg-red-500'
+      default: return 'bg-gray-500'
+    }
   }
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-      className="glass rounded-2xl overflow-hidden"
+      className="glass rounded-2xl p-6 space-y-6"
     >
-      {/* Header */}
-      <div className="p-6 border-b border-white/10">
+      {/* Header with Stats */}
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-cyber-gradient rounded-xl flex items-center justify-center">
-              <Activity className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold text-white text-glow">Live Transactions</h3>
-              <p className="text-white/60 text-sm">Real-time transaction feed from Monad testnet</p>
-            </div>
-          </div>
+          <h3 className="text-2xl font-bold text-white text-glow">Live Transaction Feed</h3>
           
           <div className="flex items-center space-x-3">
-            <button
-              onClick={() => setIsLive(!isLive)}
-              className={`p-2 rounded-lg transition-all ${
-                isLive ? 'bg-cyber-green/20 text-cyber-green' : 'bg-white/10 text-white/60'
-              }`}
-              title={isLive ? 'Pause live feed' : 'Resume live feed'}
-            >
-              {isLive ? (
-                <div className="w-3 h-3 bg-cyber-green rounded-full animate-pulse"></div>
-              ) : (
-                <RefreshCw className="w-4 h-4" />
-              )}
-            </button>
-            
-            <div className="text-right">
-              <div className="text-white font-medium">{transactions.length}</div>
-              <div className="text-white/60 text-xs">Recent TXs</div>
+            {/* Filter */}
+            <div className="flex items-center space-x-2 glass-subtle rounded-lg p-2">
+              <Filter className="w-4 h-4 text-white/60" />
+              <select 
+                value={filter}
+                onChange={(e) => setFilter(e.target.value as any)}
+                className="bg-transparent text-white text-sm border-none outline-none"
+              >
+                <option value="all">All</option>
+                <option value="transfer">Transfers</option>
+                <option value="contract">Contracts</option>
+                <option value="swap">Swaps</option>
+                <option value="mint">Mints</option>
+              </select>
             </div>
+
+            {/* Play/Pause */}
+            <motion.button
+              onClick={handleToggle}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`p-2 rounded-lg ${
+                isRunning 
+                  ? 'bg-cyber-green text-white' 
+                  : 'bg-white/10 text-white/60 hover:bg-white/20'
+              }`}
+            >
+              {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="glass-subtle rounded-lg p-3 text-center">
+            <div className="text-white/60 text-xs">Total TXs</div>
+            <div className="text-cyber-blue font-bold">{stats.totalTxs.toLocaleString()}</div>
+          </div>
+          <div className="glass-subtle rounded-lg p-3 text-center">
+            <div className="text-white/60 text-xs">24h Volume</div>
+            <div className="text-cyber-green font-bold">{(stats.txsLast24h / 1000000).toFixed(1)}M</div>
+          </div>
+          <div className="glass-subtle rounded-lg p-3 text-center">
+            <div className="text-white/60 text-xs">Avg Gas</div>
+            <div className="text-cyber-purple font-bold">{stats.avgGasPrice.toFixed(2)} Gwei</div>
+          </div>
+          <div className="glass-subtle rounded-lg p-3 text-center">
+            <div className="text-white/60 text-xs">Success Rate</div>
+            <div className="text-cyber-yellow font-bold">{stats.successRate.toFixed(1)}%</div>
+          </div>
+          <div className="glass-subtle rounded-lg p-3 text-center">
+            <div className="text-white/60 text-xs">Live Count</div>
+            <div className="text-white font-bold">{filteredTransactions.length}</div>
           </div>
         </div>
       </div>
 
-      {/* Transactions List */}
-      <div className="max-h-96 overflow-y-auto">
-        <AnimatePresence>
-          {transactions.map((tx, index) => (
+      {/* Transaction Feed */}
+      <div className="space-y-2 max-h-96 overflow-y-auto custom-scrollbar">
+        <AnimatePresence mode="popLayout">
+          {filteredTransactions.map((tx, index) => (
             <motion.div
               key={tx.id}
               initial={{ opacity: 0, x: -20, scale: 0.95 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 20, scale: 0.95 }}
-              transition={{ duration: 0.3, delay: index * 0.02 }}
-              className="p-4 border-b border-white/5 hover:bg-white/5 transition-colors"
+              transition={{ duration: 0.3, delay: index * 0.05 }}
+              className="glass-subtle rounded-lg p-4 hover:bg-white/10 transition-all group"
             >
               <div className="flex items-center justify-between">
-                {/* Left side - Transaction info */}
+                {/* Left: TX Info */}
                 <div className="flex items-center space-x-3">
-                  {getTypeIcon(tx.type)}
+                  <div className={`p-2 rounded-lg bg-white/10 ${getTypeColor(tx.type)}`}>
+                    {getTypeIcon(tx.type)}
+                  </div>
                   
-                  <div className="space-y-1">
+                  <div>
                     <div className="flex items-center space-x-2">
-                      <span className={`text-xs px-2 py-1 rounded font-medium ${getTypeColor(tx.type)}`}>
-                        {tx.type.toUpperCase()}
+                      <span className="text-white/80 text-sm font-medium capitalize">
+                        {tx.type}
                       </span>
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        tx.status === 'confirmed' ? 'bg-cyber-green/20 text-cyber-green' :
-                        tx.status === 'failed' ? 'bg-red-500/20 text-red-500' :
-                        'bg-yellow-500/20 text-yellow-500'
-                      }`}>
-                        {tx.status}
-                      </span>
+                      <div className={`w-2 h-2 rounded-full ${getStatusColor(tx.status)}`}></div>
                     </div>
                     
-                    <div className="text-white/60 text-sm font-mono">
-                      {tx.hash}
-                    </div>
-                    
-                    <div className="flex items-center space-x-4 text-xs text-white/50">
-                      <span>Block #{tx.blockNumber}</span>
-                      <span>{formatTimeAgo(tx.timestamp)}</span>
+                    <div className="flex items-center space-x-2 text-xs text-white/60">
+                      <span>{tx.from.substring(0, 8)}...{tx.from.substring(tx.from.length - 4)}</span>
+                      <ArrowUpRight className="w-3 h-3" />
+                      <span>{tx.to.substring(0, 8)}...{tx.to.substring(tx.to.length - 4)}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Right side - Value and actions */}
-                <div className="text-right space-y-1">
-                  <div className="text-white font-medium">
-                    {tx.value} MON
-                  </div>
-                  <div className="text-white/60 text-xs">
-                    Gas: {tx.gasUsed.toLocaleString()}
-                  </div>
-                  <div className="text-cyber-blue text-xs">
-                    {tx.gasPrice} MON
+                {/* Center: Amount */}
+                <div className="text-right">
+                  <div className="text-white font-medium">{tx.amount}</div>
+                  <div className="text-white/50 text-xs">{tx.gasUsed.toLocaleString()} gas</div>
+                </div>
+
+                {/* Right: Actions */}
+                <div className="flex items-center space-x-2">
+                  <div className="text-right text-xs">
+                    <div className="text-white/60">#{tx.blockNumber}</div>
+                    <div className="text-white/40">
+                      {new Date(tx.timestamp).toLocaleTimeString()}
+                    </div>
                   </div>
                   
-                  <button 
-                    className="p-1 hover:bg-white/10 rounded transition-colors"
-                    title="View on Explorer"
+                  <motion.a
+                    href={getExplorerUrl('tx', tx.id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ scale: 1.1 }}
+                    className="p-1 rounded text-white/40 hover:text-cyber-blue opacity-0 group-hover:opacity-100 transition-all"
+                    title={`View on Explorer: ${tx.id}`}
                   >
-                    <ExternalLink className="w-3 h-3 text-white/60" />
-                  </button>
+                    <ExternalLink className="w-4 h-4" />
+                  </motion.a>
                 </div>
               </div>
             </motion.div>
           ))}
         </AnimatePresence>
-
-        {/* Empty state */}
-        {transactions.length === 0 && (
-          <div className="p-12 text-center">
-            <Activity className="w-16 h-16 text-white/20 mx-auto mb-4" />
-            <h3 className="text-white/60 font-medium mb-2">
-              {networkConnected ? 'Waiting for transactions...' : 'Network not connected'}
-            </h3>
-            <p className="text-white/40 text-sm">
-              {networkConnected 
-                ? 'Live transaction feed will appear here when network activity is detected.' 
-                : 'Connect to Monad testnet to see live transactions.'
-              }
-            </p>
-          </div>
-        )}
       </div>
 
-      {/* Footer Stats */}
-      <div className="p-4 bg-white/2 border-t border-white/10">
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-cyber-green font-bold">
-              {transactions.filter(tx => tx.status === 'confirmed').length}
-            </div>
-            <div className="text-white/60 text-xs">Confirmed</div>
-          </div>
-          <div>
-            <div className="text-yellow-500 font-bold">
-              {transactions.filter(tx => tx.status === 'pending').length}
-            </div>
-            <div className="text-white/60 text-xs">Pending</div>
-          </div>
-          <div>
-            <div className="text-red-500 font-bold">
-              {transactions.filter(tx => tx.status === 'failed').length}
-            </div>
-            <div className="text-white/60 text-xs">Failed</div>
-          </div>
+      {/* Footer */}
+      <div className="flex items-center justify-between pt-4 border-t border-white/10">
+        <div className="flex items-center space-x-2 text-sm text-white/60">
+          <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-cyber-green animate-pulse' : 'bg-white/30'}`}></div>
+          <span>{isRunning ? 'Live streaming' : 'Paused'}</span>
+          <span>•</span>
+          <span>Updated every 2s</span>
         </div>
+        
+        <motion.button
+          onClick={() => setTransactions([])}
+          whileHover={{ scale: 1.05 }}
+          className="text-white/60 hover:text-white text-sm flex items-center space-x-1"
+        >
+          <RefreshCw className="w-4 h-4" />
+          <span>Clear</span>
+        </motion.button>
       </div>
     </motion.div>
   )

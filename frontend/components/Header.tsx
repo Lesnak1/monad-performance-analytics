@@ -2,6 +2,8 @@
 import { motion } from 'framer-motion'
 import { BarChart3, Zap, Activity } from 'lucide-react'
 import NetworkIndicator from './NetworkIndicator'
+import ThemeSwitcher from './ThemeSwitcher'
+import { QuickExportButtons } from './ExportButton'
 
 interface HeaderProps {
   networkStatus?: {
@@ -11,9 +13,20 @@ interface HeaderProps {
     rpcUrl: string
   }
   currentRpcIndex?: number
+  metrics?: any
 }
 
-export default function Header({ networkStatus, currentRpcIndex }: HeaderProps = {}) {
+export default function Header({ networkStatus, currentRpcIndex, metrics }: HeaderProps = {}) {
+  // Prepare export data
+  const exportData = metrics ? [{
+    timestamp: new Date().toISOString(),
+    tps: metrics.tps || 0,
+    gasPrice: metrics.gasPrice || 0,
+    blockTime: metrics.blockTime || 0,
+    networkHealth: metrics.networkHealth || 0,
+    blockNumber: metrics.blockNumber || 0
+  }] : []
+
   return (
     <motion.header 
       initial={{ y: -100, opacity: 0 }}
@@ -61,8 +74,14 @@ export default function Header({ networkStatus, currentRpcIndex }: HeaderProps =
             </motion.a>
           </nav>
 
-          {/* Network Indicator & CTA */}
+          {/* Controls */}
           <div className="flex items-center space-x-4">
+            <QuickExportButtons 
+              data={exportData}
+              filename="monad_realtime_metrics"
+              title="Monad Real-time Metrics"
+            />
+            <ThemeSwitcher />
             {networkStatus && (
               <NetworkIndicator 
                 networkStatus={networkStatus} 

@@ -32,7 +32,7 @@ export default function CustomLineChart({
         >
           <p className="text-white/80 text-sm mb-2">{`Time: ${label}`}</p>
           <p className="text-cyber-blue font-medium">
-            {`${metric === 'tps' ? 'TPS' : 'Gas Price'}: ${payload[0].value}`}
+            {`${metric === 'tps' ? 'TPS' : 'Gas Price'}: ${metric === 'gasPrice' ? `${payload[0].value.toFixed(1)} Gwei` : Math.round(payload[0].value)}`}
           </p>
           {payload[0].payload.blockNumber && (
             <p className="text-white/60 text-xs mt-1">
