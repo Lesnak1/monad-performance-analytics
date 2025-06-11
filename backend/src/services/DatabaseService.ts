@@ -242,39 +242,25 @@ export class DatabaseService {
   // Transactions operations
   public async saveTransaction(transaction: Transaction): Promise<void> {
     try {
-      await this.prisma.transactions.upsert({
-        where: { hash: transaction.hash },
-        update: {
-          from: transaction.from,
-          to: transaction.to,
-          value: transaction.value,
-          gasPrice: transaction.gasPrice,
-          gasUsed: transaction.gasUsed,
-          gasLimit: transaction.gasLimit,
-          blockNumber: transaction.blockNumber,
-          blockHash: transaction.blockHash,
-          timestamp: transaction.timestamp,
-          status: transaction.status,
-          type: transaction.type,
-          updatedAt: new Date()
-        },
-        create: {
+      await this.prisma.transactions.create({
+        data: {
           hash: transaction.hash,
           from: transaction.from,
           to: transaction.to,
           value: transaction.value,
           gasPrice: transaction.gasPrice,
-          gasUsed: transaction.gasUsed,
-          gasLimit: transaction.gasLimit,
+          gasUsed: transaction.gasUsed.toString(),
+          gasLimit: '0', // Default value since not in interface
           blockNumber: transaction.blockNumber,
-          blockHash: transaction.blockHash,
-          timestamp: transaction.timestamp,
+          blockHash: '', // Default value since not in interface  
+          timestamp: new Date(transaction.timestamp * 1000),
           status: transaction.status,
           type: transaction.type,
-          createdAt: new Date(),
-          updatedAt: new Date()
+          createdAt: new Date()
         }
       })
+
+      logger.debug('Saved transaction to database:', transaction.hash)
     } catch (error) {
       logger.error('Error saving transaction:', error)
       throw error
@@ -283,9 +269,27 @@ export class DatabaseService {
 
   public async saveTransactions(transactions: Transaction[]): Promise<void> {
     try {
-      for (const transaction of transactions) {
-        await this.saveTransaction(transaction)
-      }
+      const data = transactions.map(transaction => ({
+        hash: transaction.hash,
+        from: transaction.from,
+        to: transaction.to,
+        value: transaction.value,
+        gasPrice: transaction.gasPrice,
+        gasUsed: transaction.gasUsed.toString(),
+        gasLimit: '0', // Default value since not in interface
+        blockNumber: transaction.blockNumber,
+        blockHash: '', // Default value since not in interface
+        timestamp: new Date(transaction.timestamp * 1000),
+        status: transaction.status,
+        type: transaction.type,
+        createdAt: new Date()
+      }))
+
+      await this.prisma.transactions.createMany({
+        data,
+        skipDuplicates: true
+      })
+
       logger.debug(`Saved ${transactions.length} transactions to database`)
     } catch (error) {
       logger.error('Error saving transactions:', error)
@@ -406,19 +410,26 @@ export class DatabaseService {
   }
 
   // User operations (for future authentication)
-  public async createUser(userData: { email: string, passwordHash: string, name?: string }): Promise<string> {
+  public async createUser(userData: { email: string, passwordHash: string, name?: string, createdAt?: Date, lastLogin?: Date | null }): Promise<any> {
     try {
       const user = await this.prisma.users.create({
         data: {
           email: userData.email,
           passwordHash: userData.passwordHash,
           name: userData.name,
-          createdAt: new Date(),
+          createdAt: userData.createdAt || new Date(),
+          lastLogin: userData.lastLogin || null,
           updatedAt: new Date()
         }
       })
 
-      return user.id
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin
+      }
     } catch (error) {
       logger.error('Error creating user:', error)
       throw error
@@ -445,13 +456,34 @@ export class DatabaseService {
           email: true,
           name: true,
           createdAt: true,
-          updatedAt: true
+          lastLogin: true
         }
       })
     } catch (error) {
       logger.error('Error fetching user by ID:', error)
       throw error
     }
+  }
+
+  public async updateUserLastLogin(userId: string): Promise<void> {
+    try {
+      await this.prisma.users.update({
+        where: { id: userId },
+        data: {
+          lastLogin: new Date(),
+          updatedAt: new Date()
+        }
+      })
+
+      logger.debug(`Updated last login for user: ${userId}`)
+    } catch (error) {
+      logger.error('Error updating user last login:', error)
+      throw error
+    }
+  }
+
+  public async getMetricsInRange(startTime: Date, endTime: Date): Promise<NetworkMetrics[]> {
+    return this.getMetricsByTimeRange(startTime, endTime)
   }
 
   // Analytics operations
@@ -627,13 +659,11 @@ export class DatabaseService {
       to: dbTransaction.to,
       value: dbTransaction.value,
       gasPrice: dbTransaction.gasPrice,
-      gasUsed: dbTransaction.gasUsed,
-      gasLimit: dbTransaction.gasLimit,
+      gasUsed: parseInt(dbTransaction.gasUsed),
+      status: dbTransaction.status === 'success' ? 'confirmed' : dbTransaction.status,
+      timestamp: Math.floor(dbTransaction.timestamp.getTime() / 1000),
       blockNumber: dbTransaction.blockNumber,
-      blockHash: dbTransaction.blockHash,
-      timestamp: dbTransaction.timestamp,
-      status: dbTransaction.status as 'success' | 'failed' | 'pending',
-      type: dbTransaction.type as 'transfer' | 'contract' | 'swap' | 'mint' | 'burn' | 'bridge'
+      type: ['burn', 'bridge'].includes(dbTransaction.type) ? 'contract' : dbTransaction.type
     }
   }
 } 

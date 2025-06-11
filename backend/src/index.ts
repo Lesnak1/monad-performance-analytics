@@ -106,9 +106,10 @@ const initializeServices = async () => {
     await dbService.connect()
     logger.info('✅ Database connected successfully')
 
-    // Initialize Monad RPC service
+    // Initialize Monad RPC Service
+    logger.info('🔗 Connecting to Monad Testnet...')
     const rpcService = MonadRPCService.getInstance()
-    await rpcService.initialize()
+    await rpcService.connect()
     logger.info('✅ Monad RPC service initialized')
 
     // Initialize metrics collector

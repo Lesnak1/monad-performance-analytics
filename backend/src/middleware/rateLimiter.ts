@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express'
 import { RateLimiterRedis } from 'rate-limiter-flexible'
 import Redis from 'redis'
 import logger from '../utils/logger'
+import rateLimit from 'express-rate-limit'
 
 // Redis client setup
 const redisClient = Redis.createClient({
@@ -87,25 +88,67 @@ const rateLimiter = async (req: Request, res: Response, next: NextFunction) => {
   }
 }
 
-// Specific rate limiters for different use cases
-export const authRateLimiter = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const key = req.ip || 'unknown'
-    await rateLimiters.auth.consume(key)
-    next()
-  } catch (rejRes: any) {
-    const secs = Math.round(rejRes.msBeforeNext / 1000) || 1
-    res.set('Retry-After', String(secs))
+// General rate limiter - 100 requests per 15 minutes
+export const generalRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: {
+    error: 'Too many requests from this IP, please try again later.',
+    retryAfter: '15 minutes'
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  handler: (req: Request, res: Response) => {
     res.status(429).json({
       success: false,
-      error: {
-        message: 'Too many authentication attempts',
-        retryAfter: secs
-      }
+      error: 'Rate limit exceeded',
+      message: 'Too many requests from this IP, please try again later.',
+      retryAfter: '15 minutes'
     })
   }
-}
+})
 
+// Authentication rate limiter - 5 requests per 15 minutes (more strict)
+export const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 auth requests per windowMs
+  message: {
+    error: 'Too many authentication attempts from this IP, please try again later.',
+    retryAfter: '15 minutes'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req: Request, res: Response) => {
+    res.status(429).json({
+      success: false,
+      error: 'Authentication rate limit exceeded',
+      message: 'Too many login/register attempts from this IP, please try again later.',
+      retryAfter: '15 minutes'
+    })
+  }
+})
+
+// API rate limiter - 1000 requests per hour (for API endpoints)
+export const apiRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 1000, // limit each IP to 1000 requests per hour
+  message: {
+    error: 'API rate limit exceeded',
+    retryAfter: '1 hour'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req: Request, res: Response) => {
+    res.status(429).json({
+      success: false,
+      error: 'API rate limit exceeded',
+      message: 'Too many API requests from this IP, please try again later.',
+      retryAfter: '1 hour'
+    })
+  }
+})
+
+// Specific rate limiters for different use cases
 export const heavyRateLimiter = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const key = req.ip || 'unknown'
@@ -147,4 +190,4 @@ export const closeRateLimiter = async () => {
   }
 }
 
-export default rateLimiter 
+export default generalRateLimiter 
