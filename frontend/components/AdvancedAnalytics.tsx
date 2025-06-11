@@ -77,110 +77,107 @@ export default function AdvancedAnalytics() {
     }
   })
 
-  // Fetch real data from backend
+  // Fetch real data from backend with fallback
   useEffect(() => {
     const fetchAnalyticsData = async () => {
+      let currentMetrics = null
+      
       try {
-        const [metricsResponse, transactionsResponse] = await Promise.all([
-          fetch('http://localhost:8000/api/metrics'),
-          fetch('http://localhost:8000/api/transactions')
-        ])
-
-        let currentMetrics = null
-        if (metricsResponse.ok) {
+        const metricsResponse = await fetch('/api/metrics').catch(() => null)
+        
+        if (metricsResponse && metricsResponse.ok) {
           const result = await metricsResponse.json()
           if (result.success) {
             currentMetrics = result.data
           }
         }
-
-        // Generate analytics data based on real metrics
-        const newData: AnalyticsData = {
-          performance: {
-            tps: [],
-            gasPrice: [],
-            blockTime: [],
-            networkHealth: [],
-            timestamps: []
-          },
-          distribution: {
-            txTypes: [
-              { name: 'Transfer', value: 65, color: '#00d4ff' },
-              { name: 'Contract', value: 20, color: '#8b5cf6' },
-              { name: 'Swap', value: 10, color: '#10b981' },
-              { name: 'Mint', value: 3, color: '#f59e0b' },
-              { name: 'Other', value: 2, color: '#ef4444' }
-            ],
-            gasUsage: [
-              { range: '0-50K', count: 2340 },
-              { range: '50-100K', count: 1890 },
-              { range: '100-200K', count: 1230 },
-              { range: '200K+', count: 340 }
-            ],
-            timeOfDay: []
-          },
-          comparison: {
-            chains: [
-              { 
-                name: 'Monad', 
-                tps: currentMetrics ? currentMetrics.tps : 127, 
-                gasPrice: currentMetrics ? parseFloat(currentMetrics.gasPrice) : 50, 
-                blockTime: 0.6 
-              },
-              { name: 'Ethereum', tps: 15, gasPrice: 25, blockTime: 12 },
-              { name: 'Polygon', tps: 65, gasPrice: 1.2, blockTime: 2.2 },
-              { name: 'Binance Smart Chain', tps: 55, gasPrice: 5, blockTime: 3 },
-              { name: 'Avalanche', tps: 45, gasPrice: 25, blockTime: 2 }
-            ],
-            historical: [
-              { period: 'This week', avgTps: currentMetrics ? currentMetrics.tps : 127, change: 15.3 },
-              { period: 'Last week', avgTps: 112, change: -8.2 },
-              { period: 'This month', avgTps: 145, change: 22.1 },
-              { period: 'Last month', avgTps: 98, change: -5.4 }
-            ]
-          }
-        }
-
-        // Generate historical performance data based on current metrics
-        const now = Date.now()
-        const intervals = {
-          '1h': { count: 60, step: 60000 },     // 1 minute
-          '6h': { count: 72, step: 300000 },    // 5 minutes  
-          '24h': { count: 48, step: 1800000 },  // 30 minutes
-          '7d': { count: 168, step: 3600000 }   // 1 hour
-        }
-        
-        const { count, step } = intervals[timeRange]
-        
-        for (let i = 0; i < count; i++) {
-          const timestamp = new Date(now - (count - 1 - i) * step).toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })
-          
-          const baseTps = currentMetrics ? currentMetrics.tps : 127
-          const baseGasPrice = currentMetrics ? parseFloat(currentMetrics.gasPrice) : 50
-          
-          newData.performance.timestamps.push(timestamp)
-          newData.performance.tps.push(Math.max(50, baseTps + Math.floor(Math.random() * 40 - 20)))
-          newData.performance.gasPrice.push(Math.max(40, baseGasPrice + Math.random() * 10 - 5))
-          newData.performance.blockTime.push(0.6 + Math.random() * 0.2)
-          newData.performance.networkHealth.push(95 + Math.random() * 5)
-        }
-
-        // Time of day distribution
-        for (let hour = 0; hour < 24; hour++) {
-          newData.distribution.timeOfDay.push({
-            hour,
-            activity: 50 + Math.sin(hour * Math.PI / 12) * 30 + Math.random() * 20
-          })
-        }
-
-        setData(newData)
       } catch (error) {
-        console.error('Analytics data fetch error:', error)
-        // Keep existing data or use defaults
+        console.log('Backend API not available for analytics, using mock data')
       }
+
+      // Generate analytics data (with real or mock metrics)
+      const newData: AnalyticsData = {
+        performance: {
+          tps: [],
+          gasPrice: [],
+          blockTime: [],
+          networkHealth: [],
+          timestamps: []
+        },
+        distribution: {
+          txTypes: [
+            { name: 'Transfer', value: 65, color: '#00d4ff' },
+            { name: 'Contract', value: 20, color: '#8b5cf6' },
+            { name: 'Swap', value: 10, color: '#10b981' },
+            { name: 'Mint', value: 3, color: '#f59e0b' },
+            { name: 'Other', value: 2, color: '#ef4444' }
+          ],
+          gasUsage: [
+            { range: '0-50K', count: 2340 },
+            { range: '50-100K', count: 1890 },
+            { range: '100-200K', count: 1230 },
+            { range: '200K+', count: 340 }
+          ],
+          timeOfDay: []
+        },
+        comparison: {
+          chains: [
+            { 
+              name: 'Monad', 
+              tps: currentMetrics ? currentMetrics.tps : 127, 
+              gasPrice: currentMetrics ? parseFloat(currentMetrics.gasPrice) : 50, 
+              blockTime: 0.6 
+            },
+            { name: 'Ethereum', tps: 15, gasPrice: 25, blockTime: 12 },
+            { name: 'Polygon', tps: 65, gasPrice: 1.2, blockTime: 2.2 },
+            { name: 'Binance Smart Chain', tps: 55, gasPrice: 5, blockTime: 3 },
+            { name: 'Avalanche', tps: 45, gasPrice: 25, blockTime: 2 }
+          ],
+          historical: [
+            { period: 'This week', avgTps: currentMetrics ? currentMetrics.tps : 127, change: 15.3 },
+            { period: 'Last week', avgTps: 112, change: -8.2 },
+            { period: 'This month', avgTps: 145, change: 22.1 },
+            { period: 'Last month', avgTps: 98, change: -5.4 }
+          ]
+        }
+      }
+
+      // Generate historical performance data based on current metrics
+      const now = Date.now()
+      const intervals = {
+        '1h': { count: 60, step: 60000 },     // 1 minute
+        '6h': { count: 72, step: 300000 },    // 5 minutes  
+        '24h': { count: 48, step: 1800000 },  // 30 minutes
+        '7d': { count: 168, step: 3600000 }   // 1 hour
+      }
+      
+      const { count, step } = intervals[timeRange]
+      
+      for (let i = 0; i < count; i++) {
+        const timestamp = new Date(now - (count - 1 - i) * step).toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        })
+        
+        const baseTps = currentMetrics ? currentMetrics.tps : 127
+        const baseGasPrice = currentMetrics ? parseFloat(currentMetrics.gasPrice) : 50
+        
+        newData.performance.timestamps.push(timestamp)
+        newData.performance.tps.push(Math.max(50, baseTps + Math.floor(Math.random() * 40 - 20)))
+        newData.performance.gasPrice.push(Math.max(40, baseGasPrice + Math.random() * 10 - 5))
+        newData.performance.blockTime.push(0.6 + Math.random() * 0.2)
+        newData.performance.networkHealth.push(95 + Math.random() * 5)
+      }
+
+      // Time of day distribution
+      for (let hour = 0; hour < 24; hour++) {
+        newData.distribution.timeOfDay.push({
+          hour,
+          activity: 50 + Math.sin(hour * Math.PI / 12) * 30 + Math.random() * 20
+        })
+      }
+
+      setData(newData)
     }
 
     fetchAnalyticsData()

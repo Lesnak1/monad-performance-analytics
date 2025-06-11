@@ -51,77 +51,75 @@ export default function HistoricalAnalysis() {
   const [data, setData] = useState<HistoricalData[]>([])
   const [currentMetrics, setCurrentMetrics] = useState<any>(null)
 
-  // Fetch real data from backend and generate historical data
+  // Fetch real data from backend and generate historical data with fallback
   useEffect(() => {
     const fetchData = async () => {
+      let latestMetrics = null
+      
       try {
-        // Get current metrics from backend
-        const response = await fetch('http://localhost:8000/api/metrics')
-        let latestMetrics = null
+        // Try to get current metrics from backend
+        const response = await fetch('/api/metrics').catch(() => null)
         
-        if (response.ok) {
+        if (response && response.ok) {
           const result = await response.json()
           if (result.success) {
             latestMetrics = result.data
             setCurrentMetrics(latestMetrics)
           }
         }
-
-        // Generate historical data based on current metrics
-        const generateHistoricalData = (): HistoricalData[] => {
-          const now = Date.now()
-          const intervals = {
-            '7d': { days: 7, step: 86400000 },     // 1 day
-            '30d': { days: 30, step: 86400000 },   // 1 day  
-            '90d': { days: 90, step: 86400000 },   // 1 day
-            '1y': { days: 365, step: 86400000 }    // 1 day
-          }
-          
-          const { days, step } = intervals[timeRange]
-          const result: HistoricalData[] = []
-          
-          // Base values from current metrics or defaults
-          const baseTps = latestMetrics ? latestMetrics.tps : 127
-          const baseGasPrice = latestMetrics ? parseFloat(latestMetrics.gasPrice) : 50
-          const baseBlockNumber = latestMetrics ? latestMetrics.blockNumber : 21140000
-          
-          for (let i = 0; i < days; i++) {
-            const timestamp = now - (days - 1 - i) * step
-            const date = new Date(timestamp)
-            
-            // Add realistic variations based on time patterns
-            const dayOfWeek = date.getDay()
-            const weekendMultiplier = dayOfWeek === 0 || dayOfWeek === 6 ? 0.8 : 1.0
-            
-            // Create realistic historical variations
-            const tpsVariation = baseTps * (0.7 + Math.random() * 0.6) * weekendMultiplier
-            const gasPriceVariation = baseGasPrice + Math.sin(i * 0.1) * 10 + Math.random() * 5 - 2.5
-            
-            result.push({
-              timestamp,
-              date: date.toLocaleDateString('tr-TR'),
-              tps: Math.max(50, Math.round(tpsVariation)),
-              gasPrice: Math.max(30, Number(gasPriceVariation.toFixed(1))),
-              blockTime: 0.6 + Math.random() * 0.1,
-              networkHealth: Math.max(90, 95 + Math.random() * 5 + Math.sin(i * 0.05) * 3),
-              totalTxs: Math.round((50000 + Math.random() * 100000) * weekendMultiplier),
-              activeUsers: Math.round((5000 + Math.random() * 10000) * weekendMultiplier),
-              peakTps: Math.round(tpsVariation * 1.3),
-              avgResponseTime: 200 + Math.random() * 100
-            })
-          }
-          
-          return result
-        }
-
-        const historicalData = generateHistoricalData()
-        setData(historicalData)
-        
       } catch (error) {
-        console.error('Error fetching historical data:', error)
-        // Fallback to default data generation if API fails
-        setData([])
+        console.log('Backend API not available for historical analysis, using mock data')
       }
+
+      // Generate historical data based on current metrics (real or mock)
+      const generateHistoricalData = (): HistoricalData[] => {
+        const now = Date.now()
+        const intervals = {
+          '7d': { days: 7, step: 86400000 },     // 1 day
+          '30d': { days: 30, step: 86400000 },   // 1 day  
+          '90d': { days: 90, step: 86400000 },   // 1 day
+          '1y': { days: 365, step: 86400000 }    // 1 day
+        }
+        
+        const { days, step } = intervals[timeRange]
+        const result: HistoricalData[] = []
+        
+        // Base values from current metrics or defaults
+        const baseTps = latestMetrics ? latestMetrics.tps : 127
+        const baseGasPrice = latestMetrics ? parseFloat(latestMetrics.gasPrice) : 50
+        const baseBlockNumber = latestMetrics ? latestMetrics.blockNumber : 21140000
+        
+        for (let i = 0; i < days; i++) {
+          const timestamp = now - (days - 1 - i) * step
+          const date = new Date(timestamp)
+          
+          // Add realistic variations based on time patterns
+          const dayOfWeek = date.getDay()
+          const weekendMultiplier = dayOfWeek === 0 || dayOfWeek === 6 ? 0.8 : 1.0
+          
+          // Create realistic historical variations
+          const tpsVariation = baseTps * (0.7 + Math.random() * 0.6) * weekendMultiplier
+          const gasPriceVariation = baseGasPrice + Math.sin(i * 0.1) * 10 + Math.random() * 5 - 2.5
+          
+          result.push({
+            timestamp,
+            date: date.toLocaleDateString('en-US'),
+            tps: Math.max(50, Math.round(tpsVariation)),
+            gasPrice: Math.max(30, Number(gasPriceVariation.toFixed(1))),
+            blockTime: 0.6 + Math.random() * 0.1,
+            networkHealth: Math.max(90, 95 + Math.random() * 5 + Math.sin(i * 0.05) * 3),
+            totalTxs: Math.round((50000 + Math.random() * 100000) * weekendMultiplier),
+            activeUsers: Math.round((5000 + Math.random() * 10000) * weekendMultiplier),
+            peakTps: Math.round(tpsVariation * 1.3),
+            avgResponseTime: 200 + Math.random() * 100
+          })
+        }
+        
+        return result
+      }
+
+      const historicalData = generateHistoricalData()
+      setData(historicalData)
     }
 
     fetchData()

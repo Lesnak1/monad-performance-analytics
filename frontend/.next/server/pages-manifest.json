@@ -3,5 +3,6 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/": "pages/index.js",
-  "/benchmarks": "pages/benchmarks.js"
+  "/benchmarks": "pages/benchmarks.js",
+  "/api/metrics": "pages/api/metrics.js"
 }

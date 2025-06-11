@@ -33,17 +33,18 @@ export default function LiveTransactions({ isPlaying = true, onToggle }: LiveTra
     topGasUser: '0x2f1e...8a4d'
   })
 
-  // Fetch real transactions from backend
+  // Fetch real transactions from backend with fallback
   const fetchTransactions = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/transactions')
-      if (response.ok) {
+      const response = await fetch('/api/transactions').catch(() => null)
+      
+      if (response && response.ok) {
         const result = await response.json()
         if (result.success && result.data) {
           // Convert backend data to our format
           const newTransactions = result.data.map((tx: any) => ({
             id: tx.hash,
-            type: 'transfer' as const, // Most transactions are transfers
+            type: 'transfer' as const,
             from: tx.from,
             to: tx.to || '0x0000000000000000000000000000000000000000',
             amount: `${parseFloat(tx.value).toFixed(4)} MON`,
@@ -54,7 +55,6 @@ export default function LiveTransactions({ isPlaying = true, onToggle }: LiveTra
             blockNumber: tx.blockNumber
           }))
           
-          // Update stats with real data
           setStats(prev => ({
             ...prev,
             totalTxs: result.totalTransactions || 0,
@@ -64,19 +64,21 @@ export default function LiveTransactions({ isPlaying = true, onToggle }: LiveTra
           
           setTransactions(prev => {
             const combined = [...newTransactions, ...prev]
-            return combined.slice(0, 20) // Keep last 20 transactions
+            return combined.slice(0, 20)
           })
+          return // Successfully got real data
         }
       }
     } catch (error) {
-      console.error('Error fetching transactions:', error)
-      // Fallback to generated transaction if API fails
-      const newTx = generateLiveTransaction()
-      setTransactions(prev => {
-        const updated = [newTx, ...prev]
-        return updated.slice(0, 20)
-      })
+      console.log('Backend API not available, using simulated transactions')
     }
+    
+    // Fallback to generated transaction
+    const newTx = generateLiveTransaction()
+    setTransactions(prev => {
+      const updated = [newTx, ...prev]
+      return updated.slice(0, 20)
+    })
   }
 
   // Enhanced transaction fetching
@@ -91,7 +93,7 @@ export default function LiveTransactions({ isPlaying = true, onToggle }: LiveTra
 
       // Update stats occasionally with backend data
       if (Math.random() < 0.3) {
-        fetch('http://localhost:8000/api/metrics')
+        fetch('/api/metrics')
           .then(res => res.json())
           .then(result => {
             if (result.success) {
