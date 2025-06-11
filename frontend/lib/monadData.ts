@@ -85,8 +85,8 @@ export const getMonadMetrics = async (): Promise<MonadMetrics> => {
       const blockTime = previousBlock ? (latestBlock.timestamp - previousBlock.timestamp) : 2
 
       // Get gas price
-      const feeData = await provider.getFeeData().catch(() => ({ gasPrice: 1000000000n }))
-      const gasPriceInMON = Number(feeData.gasPrice || 0n) / 1e18
+      const feeData = await provider.getFeeData().catch(() => ({ gasPrice: BigInt(1000000000) }))
+      const gasPriceInMON = Number(feeData.gasPrice || BigInt(0)) / 1e18
 
       // Calculate TPS (transactions per second)
       const txCount = latestBlock.transactions?.length || 0
