@@ -15,7 +15,13 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio"
   },
-  "keywords": ["monad", "blockchain", "analytics", "api", "typescript"],
+  "keywords": [
+    "monad",
+    "blockchain",
+    "analytics",
+    "api",
+    "typescript"
+  ],
   "author": "Monad Analytics Team",
   "license": "MIT",
   "type": "commonjs",
