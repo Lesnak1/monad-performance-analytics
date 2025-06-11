@@ -98,6 +98,11 @@ function generateRealisticTxHash(): string {
 async function fetchFromSocialScan() {
   try {
     const rpcUrl = RPC_ENDPOINTS[0]
+    
+    // Create AbortController for timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 8000)
+    
     const response = await fetch(rpcUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -107,8 +112,10 @@ async function fetchFromSocialScan() {
         params: ['latest', true], // Include transactions
         id: 1
       }),
-      timeout: 8000
+      signal: controller.signal
     })
+    
+    clearTimeout(timeoutId)
 
     if (response.ok) {
       const data = await response.json()
