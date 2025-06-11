@@ -108,7 +108,7 @@ export class FoundryRunner {
       let txHash: string | undefined
       let blockNumber: number | undefined
 
-      const process = spawn(this.foundryPath, args, {
+      const childProcess = spawn(this.foundryPath, args, {
         cwd: this.contractsPath,
         env: {
           ...process.env,
@@ -116,7 +116,7 @@ export class FoundryRunner {
         }
       })
 
-      process.stdout.on('data', (data) => {
+      childProcess.stdout.on('data', (data) => {
         const output = data.toString()
         logs.push(output)
         console.log('Foundry stdout:', output)
@@ -140,13 +140,13 @@ export class FoundryRunner {
         }
       })
 
-      process.stderr.on('data', (data) => {
+      childProcess.stderr.on('data', (data) => {
         const error = data.toString()
         logs.push(`ERROR: ${error}`)
         console.error('Foundry stderr:', error)
       })
 
-      process.on('close', (code) => {
+      childProcess.on('close', (code) => {
         const duration = (Date.now() - startTime) / 1000
 
         if (code === 0) {
@@ -169,7 +169,7 @@ export class FoundryRunner {
         }
       })
 
-      process.on('error', (error) => {
+      childProcess.on('error', (error) => {
         resolve({
           success: false,
           gasUsed: 0,
@@ -181,7 +181,7 @@ export class FoundryRunner {
 
       // Timeout after 5 minutes
       setTimeout(() => {
-        process.kill('SIGTERM')
+        childProcess.kill('SIGTERM')
         resolve({
           success: false,
           gasUsed,
@@ -196,19 +196,19 @@ export class FoundryRunner {
   // Check if Foundry is available
   async checkFoundryAvailability(): Promise<boolean> {
     return new Promise((resolve) => {
-      const process = spawn(this.foundryPath, ['--version'])
+      const foundryProcess = spawn(this.foundryPath, ['--version'])
       
-      process.on('close', (code) => {
+      foundryProcess.on('close', (code) => {
         resolve(code === 0)
       })
       
-      process.on('error', () => {
+      foundryProcess.on('error', () => {
         resolve(false)
       })
 
       // Timeout after 5 seconds
       setTimeout(() => {
-        process.kill()
+        foundryProcess.kill()
         resolve(false)
       }, 5000)
     })
