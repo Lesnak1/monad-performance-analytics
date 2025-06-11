@@ -15,16 +15,16 @@ interface NetworkIndicatorProps {
 export default function NetworkIndicator({ networkStatus, currentRpcIndex = 0 }: NetworkIndicatorProps) {
   const getNetworkInfo = () => {
     switch (networkStatus.chainId) {
-      case 41454:
+      case 10143:
         return {
           name: 'Monad Testnet',
           color: 'bg-cyber-blue',
           textColor: 'text-cyber-blue',
           type: 'TESTNET'
         }
-      case 10143:
+      case 41454:
         return {
-          name: 'Monad Devnet',
+          name: 'Monad Devnet (Old)',
           color: 'bg-cyber-purple',
           textColor: 'text-cyber-purple',
           type: 'DEVNET'
@@ -55,9 +55,9 @@ export default function NetworkIndicator({ networkStatus, currentRpcIndex = 0 }:
 
   const getRpcInfo = () => {
     const rpcNames = [
-      'Monad Official RPC',
-      'Caldera RPC',
-      'WebSocket RPC'
+      'Monad Official Testnet RPC',
+      'ThirdWeb RPC',
+      'Backup RPC'
     ]
     return rpcNames[currentRpcIndex] || 'Unknown RPC'
   }
@@ -85,15 +85,22 @@ export default function NetworkIndicator({ networkStatus, currentRpcIndex = 0 }:
 
       {/* Network Info */}
       <div className="text-right">
-        <div className="flex items-center space-x-2">
-          <span className={`text-xs font-bold px-2 py-1 rounded ${
-            networkInfo.type === 'MAINNET' ? 'bg-cyber-green/20 text-cyber-green' :
-            networkInfo.type === 'TESTNET' ? 'bg-cyber-blue/20 text-cyber-blue' :
-            networkInfo.type === 'DEVNET' ? 'bg-cyber-purple/20 text-cyber-purple' :
-            'bg-red-500/20 text-red-500'
-          }`}>
+        <div className="flex items-center gap-2">
+          <div className={`
+            px-2 py-1 rounded text-xs font-medium
+            ${networkStatus.connected ? 'bg-cyber-green/20 text-cyber-green' : 'bg-red-500/20 text-red-400'}
+          `}>
+            {networkStatus.connected ? 'CONNECTED' : 'DISCONNECTED'}
+          </div>
+          
+          <div className={`
+            px-2 py-1 rounded text-xs font-medium
+            ${networkInfo.type === 'TESTNET' ? 'bg-cyber-blue/20 text-cyber-blue' : 
+              networkInfo.type === 'MAINNET' ? 'bg-cyber-green/20 text-cyber-green' : 
+              'bg-cyber-purple/20 text-cyber-purple'}
+          `}>
             {networkInfo.type}
-          </span>
+          </div>
         </div>
         <div className="text-white/60 text-xs">
           Block #{networkStatus.blockNumber.toLocaleString()}
@@ -139,6 +146,33 @@ export default function NetworkIndicator({ networkStatus, currentRpcIndex = 0 }:
             <span className="text-white/60 text-xs">RPC Endpoint:</span>
             <div className="text-white/80 text-xs font-mono break-all">
               {networkStatus.rpcUrl.replace('https://', '').substring(0, 30)}...
+            </div>
+          </div>
+
+          {/* Explorer Links */}
+          <div className="pt-2 border-t border-white/10">
+            <span className="text-white/60 text-xs">Block Explorers:</span>
+            <div className="text-xs space-y-1 mt-1">
+              <div>
+                <a 
+                  href="https://monad-testnet.socialscan.io" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-cyber-blue hover:text-cyber-blue/80"
+                >
+                  📊 SocialScan (Live Data)
+                </a>
+              </div>
+              <div>
+                <a 
+                  href="https://testnet.monadexplorer.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-cyber-purple hover:text-cyber-purple/80"
+                >
+                  🔍 MonadExplorer
+                </a>
+              </div>
             </div>
           </div>
         </div>
