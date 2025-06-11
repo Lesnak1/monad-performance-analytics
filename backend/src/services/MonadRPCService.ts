@@ -34,12 +34,12 @@ export class MonadRPCService {
   private transactionHistory: Transaction[] = []
   private currentMetrics: NetworkMetrics | null = null
   
-  // Monad Testnet configuration
+  // Monad Testnet configuration with Envio HyperRPC (100x faster)
   private readonly RPC_ENDPOINTS = [
-    'https://testnet-rpc.monad.xyz',
-    'https://10143.rpc.thirdweb.com',
-    'https://rpc.monad.xyz/testnet',
-    'https://monad-testnet-rpc.publicnode.com'
+    'https://monad-testnet.rpc.hypersync.xyz', // Envio HyperRPC Primary
+    'https://10143.rpc.hypersync.xyz',         // Envio HyperRPC Alternative
+    'https://testnet-rpc.monad.xyz',           // Official fallback
+    'https://10143.rpc.thirdweb.com'           // Thirdweb fallback
   ]
   
   private readonly CHAIN_ID = 10143 // Monad Testnet

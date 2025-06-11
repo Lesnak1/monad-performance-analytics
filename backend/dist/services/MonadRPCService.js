@@ -16,10 +16,10 @@ class MonadRPCService {
         this.transactionHistory = [];
         this.currentMetrics = null;
         this.RPC_ENDPOINTS = [
+            'https://monad-testnet.rpc.hypersync.xyz',
+            'https://10143.rpc.hypersync.xyz',
             'https://testnet-rpc.monad.xyz',
-            'https://10143.rpc.thirdweb.com',
-            'https://rpc.monad.xyz/testnet',
-            'https://monad-testnet-rpc.publicnode.com'
+            'https://10143.rpc.thirdweb.com'
         ];
         this.CHAIN_ID = 10143;
         this.CHAIN_NAME = 'Monad Testnet';

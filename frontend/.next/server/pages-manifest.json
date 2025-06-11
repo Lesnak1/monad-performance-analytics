@@ -1,1 +1,7 @@
-{"/_app":"pages/_app.js","/api/metrics":"pages/api/metrics.js","/":"pages/index.html","/benchmarks":"pages/benchmarks.html","/_error":"pages/_error.js","/api/benchmark":"pages/api/benchmark.js","/_document":"pages/_document.js","/404":"pages/404.html"}
+{
+  "/_app": "pages/_app.js",
+  "/_error": "pages/_error.js",
+  "/_document": "pages/_document.js",
+  "/": "pages/index.js",
+  "/benchmarks": "pages/benchmarks.js"
+}

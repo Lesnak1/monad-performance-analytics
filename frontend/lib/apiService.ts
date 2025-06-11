@@ -1,5 +1,5 @@
-// API Service for Backend Integration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+// API Service for Backend Integration - Using Envio HyperRPC Backend
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 // Monad Testnet Configuration
 const MONAD_TESTNET_CONFIG = {
@@ -138,12 +138,12 @@ class APIService {
 
   // Health check
   async healthCheck(): Promise<APIResponse> {
-    return this.request('/api/health')
+    return this.request('/health')
   }
 
   // Get current metrics
   async getCurrentMetrics(): Promise<APIResponse<MetricsData>> {
-    return this.request<MetricsData>('/api/metrics/current')
+    return this.request<MetricsData>('/api/metrics')
   }
 
   // Get metrics history
@@ -158,11 +158,7 @@ class APIService {
 
   // Get recent transactions
   async getTransactions(limit: number = 50, type?: string): Promise<APIResponse<TransactionData[]>> {
-    const params = new URLSearchParams({
-      limit: limit.toString(),
-      ...(type && { type })
-    })
-    return this.request<TransactionData[]>(`/api/metrics/transactions?${params}`)
+    return this.request<TransactionData[]>('/api/transactions')
   }
 
   // Get live data (quick endpoint)

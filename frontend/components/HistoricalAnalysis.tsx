@@ -49,79 +49,118 @@ export default function HistoricalAnalysis() {
   const [selectedMetric, setSelectedMetric] = useState<'tps' | 'gasPrice' | 'networkHealth' | 'totalTxs'>('tps')
   const [comparisonMode, setComparisonMode] = useState(false)
   const [data, setData] = useState<HistoricalData[]>([])
+  const [currentMetrics, setCurrentMetrics] = useState<any>(null)
 
-  // Generate historical data
+  // Fetch real data from backend and generate historical data
   useEffect(() => {
-    const generateHistoricalData = (): HistoricalData[] => {
-      const now = Date.now()
-      const intervals = {
-        '7d': { days: 7, step: 86400000 },     // 1 day
-        '30d': { days: 30, step: 86400000 },   // 1 day  
-        '90d': { days: 90, step: 86400000 },   // 1 day
-        '1y': { days: 365, step: 86400000 }    // 1 day
+    const fetchData = async () => {
+      try {
+        // Get current metrics from backend
+        const response = await fetch('http://localhost:8000/api/metrics')
+        let latestMetrics = null
+        
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success) {
+            latestMetrics = result.data
+            setCurrentMetrics(latestMetrics)
+          }
+        }
+
+        // Generate historical data based on current metrics
+        const generateHistoricalData = (): HistoricalData[] => {
+          const now = Date.now()
+          const intervals = {
+            '7d': { days: 7, step: 86400000 },     // 1 day
+            '30d': { days: 30, step: 86400000 },   // 1 day  
+            '90d': { days: 90, step: 86400000 },   // 1 day
+            '1y': { days: 365, step: 86400000 }    // 1 day
+          }
+          
+          const { days, step } = intervals[timeRange]
+          const result: HistoricalData[] = []
+          
+          // Base values from current metrics or defaults
+          const baseTps = latestMetrics ? latestMetrics.tps : 127
+          const baseGasPrice = latestMetrics ? parseFloat(latestMetrics.gasPrice) : 50
+          const baseBlockNumber = latestMetrics ? latestMetrics.blockNumber : 21140000
+          
+          for (let i = 0; i < days; i++) {
+            const timestamp = now - (days - 1 - i) * step
+            const date = new Date(timestamp)
+            
+            // Add realistic variations based on time patterns
+            const dayOfWeek = date.getDay()
+            const weekendMultiplier = dayOfWeek === 0 || dayOfWeek === 6 ? 0.8 : 1.0
+            
+            // Create realistic historical variations
+            const tpsVariation = baseTps * (0.7 + Math.random() * 0.6) * weekendMultiplier
+            const gasPriceVariation = baseGasPrice + Math.sin(i * 0.1) * 10 + Math.random() * 5 - 2.5
+            
+            result.push({
+              timestamp,
+              date: date.toLocaleDateString('tr-TR'),
+              tps: Math.max(50, Math.round(tpsVariation)),
+              gasPrice: Math.max(30, Number(gasPriceVariation.toFixed(1))),
+              blockTime: 0.6 + Math.random() * 0.1,
+              networkHealth: Math.max(90, 95 + Math.random() * 5 + Math.sin(i * 0.05) * 3),
+              totalTxs: Math.round((50000 + Math.random() * 100000) * weekendMultiplier),
+              activeUsers: Math.round((5000 + Math.random() * 10000) * weekendMultiplier),
+              peakTps: Math.round(tpsVariation * 1.3),
+              avgResponseTime: 200 + Math.random() * 100
+            })
+          }
+          
+          return result
+        }
+
+        const historicalData = generateHistoricalData()
+        setData(historicalData)
+        
+      } catch (error) {
+        console.error('Error fetching historical data:', error)
+        // Fallback to default data generation if API fails
+        setData([])
       }
-      
-      const { days, step } = intervals[timeRange]
-      const result: HistoricalData[] = []
-      
-      for (let i = 0; i < days; i++) {
-        const timestamp = now - (days - 1 - i) * step
-        const date = new Date(timestamp)
-        
-        // Simulate seasonal patterns and trends
-        const dayOfYear = Math.floor((timestamp - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000)
-        const weeklyPattern = Math.sin((dayOfYear % 7) * Math.PI / 3.5) * 0.1
-        const seasonalPattern = Math.sin(dayOfYear * 2 * Math.PI / 365) * 0.15
-        const trend = (dayOfYear / 365) * 0.2 // Slight upward trend
-        
-        const baseMultiplier = 1 + weeklyPattern + seasonalPattern + trend
-        
-        result.push({
-          timestamp,
-          date: date.toLocaleDateString('tr-TR', { 
-            month: 'short', 
-            day: 'numeric',
-            ...(timeRange === '1y' && { year: '2-digit' })
-          }),
-          tps: Math.round((160 + Math.random() * 40) * baseMultiplier),
-          gasPrice: Number(((52 + Math.random() * 4) * (1 + weeklyPattern * 0.1)).toFixed(1)),
-          blockTime: Number(((0.6 + Math.random() * 0.1) * (1 - weeklyPattern * 0.05)).toFixed(2)),
-          networkHealth: Math.round((96 + Math.random() * 4) * (1 + weeklyPattern * 0.02)),
-          totalTxs: Math.round((50000 + Math.random() * 20000) * baseMultiplier),
-          activeUsers: Math.round((8000 + Math.random() * 4000) * baseMultiplier),
-          peakTps: Math.round((200 + Math.random() * 50) * baseMultiplier),
-          avgResponseTime: Number(((45 + Math.random() * 15) * (1 - weeklyPattern * 0.1)).toFixed(1))
-        })
-      }
-      
-      return result
     }
+
+    fetchData()
     
-    setData(generateHistoricalData())
+    // Update data every 60 seconds
+    const interval = setInterval(fetchData, 60000)
+    return () => clearInterval(interval)
   }, [timeRange])
 
-  // Calculate statistics
+  // Calculate statistics based on real current metrics
   const stats = useMemo(() => {
     if (!data.length) return null
 
     const currentValue = data[data.length - 1]?.[selectedMetric] || 0
     const previousValue = data[data.length - 2]?.[selectedMetric] || 0
-    const change = ((currentValue - previousValue) / previousValue) * 100
+    const change = previousValue > 0 ? ((currentValue - previousValue) / previousValue) * 100 : 0
     
     const values = data.map(d => d[selectedMetric])
     const avg = values.reduce((sum, val) => sum + val, 0) / values.length
     const max = Math.max(...values)
     const min = Math.min(...values)
     
+    // Use current metrics for the most recent value if available
+    let actualCurrent = currentValue
+    if (currentMetrics && selectedMetric === 'tps') {
+      actualCurrent = currentMetrics.tps
+    } else if (currentMetrics && selectedMetric === 'gasPrice') {
+      actualCurrent = parseFloat(currentMetrics.gasPrice)
+    }
+    
     return {
-      current: currentValue,
+      current: actualCurrent,
       change,
       average: avg,
       maximum: max,
       minimum: min,
       trend: change > 0 ? 'up' : change < 0 ? 'down' : 'stable'
     }
-  }, [data, selectedMetric])
+  }, [data, selectedMetric, currentMetrics])
 
   const getMetricLabel = (metric: string) => {
     switch (metric) {
