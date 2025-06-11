@@ -10,59 +10,55 @@ export interface NetworkMetrics {
 export interface Transaction {
     hash: string;
     from: string;
-    to: string | null;
+    to: string;
     value: string;
     gasPrice: string;
-    gasUsed: string;
-    gasLimit: string;
+    gasUsed: number;
+    status: 'pending' | 'confirmed' | 'failed';
+    timestamp: number;
     blockNumber: number;
-    blockHash: string;
-    timestamp: Date;
-    status: 'success' | 'failed' | 'pending';
-    type: 'transfer' | 'contract' | 'swap' | 'mint' | 'burn' | 'bridge';
-}
-export interface Block {
-    number: number;
-    hash: string;
-    parentHash: string;
-    timestamp: Date;
-    gasUsed: string;
-    gasLimit: string;
-    transactionCount: number;
-    transactions: string[];
-    difficulty: string;
-    totalDifficulty: string;
+    type: 'transfer' | 'contract' | 'mint' | 'swap';
 }
 export declare class MonadRPCService {
     private static instance;
-    private provider;
-    private fallbackProvider;
-    private wsProvider;
-    private isConnected;
-    private reconnectAttempts;
-    private maxReconnectAttempts;
-    private currentBlockNumber;
-    private transactionPool;
+    private providers;
+    private currentProviderIndex;
+    private connected;
     private metricsHistory;
+    private transactionHistory;
+    private currentMetrics;
+    private readonly RPC_ENDPOINTS;
+    private readonly CHAIN_ID;
+    private readonly CHAIN_NAME;
+    private readonly NATIVE_TOKEN;
+    private readonly BLOCK_EXPLORERS;
     private constructor();
     static getInstance(): MonadRPCService;
-    initialize(): Promise<void>;
-    private testConnection;
-    private initializeWebSocket;
-    private reconnectWebSocket;
-    private setupBlockListener;
-    private handleNewBlock;
-    private calculateNetworkMetrics;
-    private calculateTPS;
-    private calculateBlockTime;
+    private initializeProviders;
+    connect(): Promise<void>;
+    private connectToProvider;
+    private collectInitialData;
+    private fetchRealTimeMetrics;
+    private fetchFromSocialScan;
     private calculateNetworkHealth;
-    private formatTransaction;
+    private fetchRecentTransactions;
     private determineTransactionType;
-    getCurrentMetrics(): NetworkMetrics | null;
-    getRecentTransactions(limit?: number): Transaction[];
-    getMetricsHistory(limit?: number): NetworkMetrics[];
-    getBlockByNumber(blockNumber: number): Promise<Block | null>;
-    getTransactionByHash(hash: string): Promise<Transaction | null>;
+    private switchProvider;
+    private startMetricsCollection;
+    private addMetricsToHistory;
     isServiceConnected(): boolean;
+    getCurrentMetrics(): NetworkMetrics | null;
+    getMetricsHistory(limit?: number): NetworkMetrics[];
+    getRecentTransactions(limit?: number): Transaction[];
+    getNetworkInfo(): {
+        chainId: number;
+        chainName: string;
+        nativeToken: string;
+        rpcEndpoints: string[];
+        blockExplorers: string[];
+        currentRpc: string;
+        connected: boolean;
+    };
+    disconnect(): Promise<void>;
 }
 //# sourceMappingURL=MonadRPCService.d.ts.map

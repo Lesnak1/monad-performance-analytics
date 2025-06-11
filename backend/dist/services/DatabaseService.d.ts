@@ -28,9 +28,13 @@ export declare class DatabaseService {
         email: string;
         passwordHash: string;
         name?: string;
-    }): Promise<string>;
+        createdAt?: Date;
+        lastLogin?: Date | null;
+    }): Promise<any>;
     getUserByEmail(email: string): Promise<any | null>;
     getUserById(id: string): Promise<any | null>;
+    updateUserLastLogin(userId: string): Promise<void>;
+    getMetricsInRange(startTime: Date, endTime: Date): Promise<NetworkMetrics[]>;
     getAnalytics(timeRange: {
         start: Date;
         end: Date;

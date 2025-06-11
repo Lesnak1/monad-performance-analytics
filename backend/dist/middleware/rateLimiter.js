@@ -3,10 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.closeRateLimiter = exports.initializeRateLimiter = exports.heavyRateLimiter = exports.authRateLimiter = void 0;
+exports.closeRateLimiter = exports.initializeRateLimiter = exports.heavyRateLimiter = exports.apiRateLimiter = exports.authRateLimiter = exports.generalRateLimiter = void 0;
 const rate_limiter_flexible_1 = require("rate-limiter-flexible");
 const redis_1 = __importDefault(require("redis"));
 const logger_1 = __importDefault(require("../utils/logger"));
+const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const redisClient = redis_1.default.createClient({
     url: process.env.REDIS_URL || 'redis://localhost:6379',
     password: process.env.REDIS_PASSWORD
@@ -70,25 +71,60 @@ const rateLimiter = async (req, res, next) => {
         });
     }
 };
-const authRateLimiter = async (req, res, next) => {
-    try {
-        const key = req.ip || 'unknown';
-        await rateLimiters.auth.consume(key);
-        next();
-    }
-    catch (rejRes) {
-        const secs = Math.round(rejRes.msBeforeNext / 1000) || 1;
-        res.set('Retry-After', String(secs));
+exports.generalRateLimiter = (0, express_rate_limit_1.default)({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: {
+        error: 'Too many requests from this IP, please try again later.',
+        retryAfter: '15 minutes'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
         res.status(429).json({
             success: false,
-            error: {
-                message: 'Too many authentication attempts',
-                retryAfter: secs
-            }
+            error: 'Rate limit exceeded',
+            message: 'Too many requests from this IP, please try again later.',
+            retryAfter: '15 minutes'
         });
     }
-};
-exports.authRateLimiter = authRateLimiter;
+});
+exports.authRateLimiter = (0, express_rate_limit_1.default)({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: {
+        error: 'Too many authentication attempts from this IP, please try again later.',
+        retryAfter: '15 minutes'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+        res.status(429).json({
+            success: false,
+            error: 'Authentication rate limit exceeded',
+            message: 'Too many login/register attempts from this IP, please try again later.',
+            retryAfter: '15 minutes'
+        });
+    }
+});
+exports.apiRateLimiter = (0, express_rate_limit_1.default)({
+    windowMs: 60 * 60 * 1000,
+    max: 1000,
+    message: {
+        error: 'API rate limit exceeded',
+        retryAfter: '1 hour'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+        res.status(429).json({
+            success: false,
+            error: 'API rate limit exceeded',
+            message: 'Too many API requests from this IP, please try again later.',
+            retryAfter: '1 hour'
+        });
+    }
+});
 const heavyRateLimiter = async (req, res, next) => {
     try {
         const key = req.ip || 'unknown';
@@ -131,5 +167,5 @@ const closeRateLimiter = async () => {
     }
 };
 exports.closeRateLimiter = closeRateLimiter;
-exports.default = rateLimiter;
+exports.default = exports.generalRateLimiter;
 //# sourceMappingURL=rateLimiter.js.map
