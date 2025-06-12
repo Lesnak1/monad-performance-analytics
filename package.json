@@ -1,9 +1,18 @@
 {
-  "dependencies": {
-    "axios": "^1.9.0",
-    "ethers": "^6.14.3",
-    "html2canvas": "^1.4.1",
-    "jspdf": "^3.0.1",
-    "xlsx": "^0.18.5"
+  "name": "mpas-analytics",
+  "version": "1.0.0",
+  "description": "Monad Performance Analytics Suite - Real-time blockchain analytics",
+  "main": "index.js",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "start": "cd frontend && npm start",
+    "dev": "cd frontend && npm run dev"
+  },
+  "keywords": ["monad", "blockchain", "analytics", "dashboard", "performance"],
+  "author": "Analytics Developer",
+  "license": "MIT",
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

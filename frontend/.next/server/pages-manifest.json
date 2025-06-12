@@ -4,5 +4,6 @@
   "/_document": "pages/_document.js",
   "/": "pages/index.js",
   "/benchmarks": "pages/benchmarks.js",
-  "/api/metrics": "pages/api/metrics.js"
+  "/api/metrics": "pages/api/metrics.js",
+  "/api/transactions": "pages/api/transactions.js"
 }

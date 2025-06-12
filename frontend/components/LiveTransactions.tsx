@@ -36,41 +36,52 @@ export default function LiveTransactions({ isPlaying = true, onToggle }: LiveTra
   // Fetch real transactions from backend with fallback
   const fetchTransactions = async () => {
     try {
-      const response = await fetch('/api/transactions').catch(() => null)
+      console.log('🔄 Fetching real transactions from API...')
+      const response = await fetch('/api/transactions')
       
       if (response && response.ok) {
         const result = await response.json()
-        if (result.success && result.data) {
+        if (result.success && result.data && result.data.length > 0) {
+          console.log(`✅ Got ${result.data.length} real transactions`)
+          
           // Convert backend data to our format
           const newTransactions = result.data.map((tx: any) => ({
-            id: tx.hash,
-            type: 'transfer' as const,
+            id: tx.hash, // Real transaction hash
+            type: tx.type || 'transfer',
             from: tx.from,
             to: tx.to || '0x0000000000000000000000000000000000000000',
             amount: `${parseFloat(tx.value).toFixed(4)} MON`,
-            status: 'confirmed' as const,
-            timestamp: Date.now(),
-            gasUsed: Math.floor(Math.random() * 50000) + 21000,
-            gasPrice: parseFloat(tx.gasPrice),
+            status: tx.status || 'confirmed',
+            timestamp: tx.timestamp * 1000, // Convert to milliseconds
+            gasUsed: tx.gasUsed || 21000,
+            gasPrice: parseFloat(tx.gasPrice) || 0.1,
             blockNumber: tx.blockNumber
           }))
           
+          // Update stats with real data
           setStats(prev => ({
             ...prev,
-            totalTxs: result.totalTransactions || 0,
+            totalTxs: result.totalTransactions || prev.totalTxs,
+            txsLast24h: (result.totalTransactions || 0) * 24 * 60, // Estimate daily
             avgGasPrice: result.data.length > 0 ? 
-              result.data.reduce((sum: number, tx: any) => sum + parseFloat(tx.gasPrice), 0) / result.data.length : 50
+              result.data.reduce((sum: number, tx: any) => sum + parseFloat(tx.gasPrice), 0) / result.data.length : 
+              prev.avgGasPrice
           }))
           
+          // Add new transactions to the feed
           setTransactions(prev => {
             const combined = [...newTransactions, ...prev]
-            return combined.slice(0, 20)
+            // Remove duplicates by transaction hash
+            const unique = combined.filter((tx, index, self) => 
+              index === self.findIndex(t => t.id === tx.id)
+            )
+            return unique.slice(0, 20) // Keep latest 20
           })
           return // Successfully got real data
         }
       }
     } catch (error) {
-      console.log('Backend API not available, using simulated transactions')
+      console.warn('⚠️ API not available, using simulated transactions:', error)
     }
     
     // Fallback to generated transaction

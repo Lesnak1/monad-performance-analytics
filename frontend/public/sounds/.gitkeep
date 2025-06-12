@@ -1,0 +1,13 @@
+# Sound Effects Directory
+
+This directory contains sound effects for the Monanimal characters and interactive elements.
+
+## Required Sound Files (to be added):
+- pop.mp3 - Generic pop sound for interactions
+- splash.mp3 - Salmonad swimming sound
+- quack.mp3 - Molandak quacking sound  
+- oink.mp3 - Chog oinking sound
+- squeak.mp3 - Mouch squeaking sound
+
+## Usage:
+These sounds are triggered by user interactions with the Monanimal characters and UI elements to enhance the silly/fun experience for Mission 4. 
