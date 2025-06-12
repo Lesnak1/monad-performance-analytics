@@ -87,8 +87,8 @@ export default function MonadLoreIntegration({ currentTPS = 127, gasPrice = 0.2,
   // Monanimal seçimi metriğe göre
   useEffect(() => {
     // Fix activation logic based on actual performance metrics
-    if (currentTPS > 100) {
-      setActiveMonanimal('Salmonad') // High TPS for fish
+    if (currentTPS > 50) {
+      setActiveMonanimal('Salmonad') // High TPS for fish (50+ TPS is good for testnet)
     } else if (gasPrice < 60) { // Gas price in Gwei, so 60 Gwei threshold
       setActiveMonanimal('Chog') // Low gas for pig
     } else if (networkHealth > 95) {
@@ -96,6 +96,12 @@ export default function MonadLoreIntegration({ currentTPS = 127, gasPrice = 0.2,
     } else {
       setActiveMonanimal('Mouch') // Default mouse for other cases
     }
+    
+    console.log(`🎮 Monanimal Logic: TPS=${currentTPS}, Gas=${gasPrice}, Health=${networkHealth} -> ${
+      currentTPS > 50 ? 'Salmonad' : 
+      gasPrice < 60 ? 'Chog' : 
+      networkHealth > 95 ? 'Molandak' : 'Mouch'
+    }`)
   }, [currentTPS, gasPrice, networkHealth])
 
   // Silly reaction generator
