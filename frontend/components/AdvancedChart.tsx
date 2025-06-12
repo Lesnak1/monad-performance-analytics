@@ -197,26 +197,47 @@ export default function AdvancedChart({
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload || !payload.length) return null
 
+    // Format timestamp properly
+    const formatTimestamp = (timestamp: string | number) => {
+      try {
+        const date = new Date(timestamp)
+        if (isNaN(date.getTime())) {
+          return 'Invalid Date'
+        }
+        return date.toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        })
+      } catch (error) {
+        return 'Invalid Date'
+      }
+    }
+
     return (
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
+        initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="glass-strong rounded-lg p-4 border border-white/20"
+        className="glass rounded-lg p-4 border border-white/20 shadow-xl"
       >
-        <p className="text-white font-medium mb-2">{label}</p>
+        <p className="text-white/60 text-sm mb-2">
+          {formatTimestamp(label)}
+        </p>
         {payload.map((entry: any, index: number) => {
           const config = metricConfig[entry.dataKey as keyof typeof metricConfig]
+          const Icon = config?.icon || Activity
+          
           return (
-            <div key={index} className="flex items-center justify-between space-x-4 text-sm">
-              <div className="flex items-center space-x-2">
-                <div 
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: entry.color }}
-                ></div>
-                <span className="text-white/70">{config?.label}</span>
-              </div>
-              <span className="text-white font-medium">
-                {entry.value?.toLocaleString()} {config?.unit}
+            <div key={index} className="flex items-center space-x-2 mb-1">
+              <Icon className="w-4 h-4" style={{ color: entry.color }} />
+              <span className="text-white text-sm font-medium">
+                {config?.label || entry.dataKey}: 
+              </span>
+              <span className="text-white font-bold">
+                {typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}
+                {config?.unit}
               </span>
             </div>
           )

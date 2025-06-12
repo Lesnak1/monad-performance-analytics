@@ -55,18 +55,30 @@ export default function Dashboard() {
           getNetworkStatus()
         ])
         
-        setMetrics(metricsData)
-        setChartData(chartPoints)
+        // Only update if we have real data
+        if (metricsData) {
+          setMetrics(metricsData)
+        } else {
+          console.warn('⚠️ No real metrics data available')
+        }
+        
+        if (chartPoints && chartPoints.length > 0) {
+          setChartData(chartPoints)
+        } else {
+          console.warn('⚠️ No real chart data available')
+        }
+        
         setNetworkStatus(status)
       } catch (error) {
-        console.error('Error fetching data:', error)
+        console.error('❌ Error fetching real data:', error)
       } finally {
         setLoading(false)
       }
     }
 
     fetchData()
-    const interval = setInterval(fetchData, 10000)
+    // Update every 3 seconds for real-time feel
+    const interval = setInterval(fetchData, 3000)
     return () => clearInterval(interval)
   }, [])
 

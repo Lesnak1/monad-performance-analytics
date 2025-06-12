@@ -33,16 +33,16 @@ export default function LiveTransactions({ isPlaying = true, onToggle }: LiveTra
     topGasUser: '0x2f1e...8a4d'
   })
 
-  // Fetch real transactions from backend with fallback
+  // Fetch ONLY real transactions from backend - NO FALLBACKS
   const fetchTransactions = async () => {
     try {
-      console.log('🔄 Fetching real transactions from API...')
+      console.log('🔄 Fetching ONLY real transactions from API...')
       const response = await fetch('/api/transactions')
       
       if (response && response.ok) {
         const result = await response.json()
         if (result.success && result.data && result.data.length > 0) {
-          console.log(`✅ Got ${result.data.length} real transactions`)
+          console.log(`✅ Got ${result.data.length} REAL transactions from Monad testnet`)
           
           // Convert backend data to our format
           const newTransactions = result.data.map((tx: any) => ({
@@ -77,19 +77,17 @@ export default function LiveTransactions({ isPlaying = true, onToggle }: LiveTra
             )
             return unique.slice(0, 20) // Keep latest 20
           })
-          return // Successfully got real data
+        } else {
+          console.log('ℹ️ No transactions available in current blocks')
         }
+      } else {
+        console.error('❌ Failed to fetch transactions from API')
       }
     } catch (error) {
-      console.warn('⚠️ API not available, using simulated transactions:', error)
+      console.error('❌ Error fetching real transactions:', error)
     }
     
-    // Fallback to generated transaction
-    const newTx = generateLiveTransaction()
-    setTransactions(prev => {
-      const updated = [newTx, ...prev]
-      return updated.slice(0, 20)
-    })
+    // NO FALLBACK TO MOCK DATA - Only real transactions or empty
   }
 
   // Enhanced transaction fetching

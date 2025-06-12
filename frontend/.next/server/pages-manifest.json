@@ -2,8 +2,8 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
+  "/api/transactions": "pages/api/transactions.js",
   "/": "pages/index.js",
-  "/benchmarks": "pages/benchmarks.js",
   "/api/metrics": "pages/api/metrics.js",
-  "/api/transactions": "pages/api/transactions.js"
+  "/benchmarks": "pages/benchmarks.js"
 }

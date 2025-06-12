@@ -86,14 +86,15 @@ export default function MonadLoreIntegration({ currentTPS = 127, gasPrice = 0.2,
 
   // Monanimal seçimi metriğe göre
   useEffect(() => {
-    if (currentTPS > 150) {
-      setActiveMonanimal('Salmonad') // Yüksek TPS için balık
-    } else if (gasPrice < 0.1) {
-      setActiveMonanimal('Molandak') // Düşük gas için ördek
-    } else if (networkHealth > 99) {
-      setActiveMonanimal('Chog') // Mükemmel sağlık için domuz
+    // Fix activation logic based on actual performance metrics
+    if (currentTPS > 100) {
+      setActiveMonanimal('Salmonad') // High TPS for fish
+    } else if (gasPrice < 60) { // Gas price in Gwei, so 60 Gwei threshold
+      setActiveMonanimal('Chog') // Low gas for pig
+    } else if (networkHealth > 95) {
+      setActiveMonanimal('Molandak') // High health for duck
     } else {
-      setActiveMonanimal('Mouch') // Varsayılan fare
+      setActiveMonanimal('Mouch') // Default mouse for other cases
     }
   }, [currentTPS, gasPrice, networkHealth])
 
@@ -102,12 +103,12 @@ export default function MonadLoreIntegration({ currentTPS = 127, gasPrice = 0.2,
     const randomReaction = SILLY_REACTIONS[Math.floor(Math.random() * SILLY_REACTIONS.length)]
     setSillyReaction(randomReaction)
     
-    if (soundEnabled) {
-      // Silly sound effect
-      const audio = new Audio('/sounds/pop.mp3')
-      audio.volume = 0.3
-      audio.play().catch(() => {}) // Fail silently
-    }
+    // Disable sound for now to prevent errors
+    // if (soundEnabled) {
+    //   const audio = new Audio('/sounds/pop.mp3')
+    //   audio.volume = 0.3
+    //   audio.play().catch(() => {})
+    // }
     
     setTimeout(() => setSillyReaction(''), 2000)
   }

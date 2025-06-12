@@ -21,7 +21,7 @@ const MONAD_TESTNET_CONFIG = {
 let cachedMetrics: any = null
 let lastFetch = 0
 let currentProviderIndex = 0
-const CACHE_DURATION = 5000 // 5 seconds cache for real-time feel
+const CACHE_DURATION = 2000 // 2 seconds cache for real-time updates
 const providers: ethers.JsonRpcProvider[] = []
 
 // Initialize providers
@@ -97,8 +97,11 @@ async function fetchRealTimeData() {
       let realTPS = 0
       if (previousBlock && latestBlock.timestamp > previousBlock.timestamp) {
         const timeDiff = latestBlock.timestamp - previousBlock.timestamp
-        const txDiff = (latestBlock.transactions?.length || 0) + (previousBlock.transactions?.length || 0)
-        realTPS = timeDiff > 0 ? Math.round(txDiff / timeDiff) : 0
+        const txCount = latestBlock.transactions?.length || 0
+        // TPS = transactions per second, so divide tx count by time difference
+        realTPS = timeDiff > 0 ? Math.round(txCount / timeDiff) : 0
+        // If TPS is 0 but there are transactions, show at least 1
+        if (realTPS === 0 && txCount > 0) realTPS = 1
       }
 
       // Real network data
@@ -136,7 +139,7 @@ export async function getMonadMetrics() {
     const realData = await fetchRealTimeData()
     
     if (realData) {
-      // Use real data
+      // Use ONLY real data - no fallbacks
       return {
         tps: Math.max(realData.tps, 0), // Real calculated TPS
         gasPrice: realData.gasPrice, // Real gas price in Gwei
@@ -154,32 +157,13 @@ export async function getMonadMetrics() {
       }
     }
     
-    // Fallback to simulated data if real data fails
-    console.warn('⚠️ Using fallback simulated data')
-    return {
-      tps: Math.floor(Math.random() * 50) + 80, // 80-130 TPS fallback
-      gasPrice: Math.random() * 0.5 + 0.1, // 0.1-0.6 Gwei fallback
-      blockTime: 0.6,
-      networkHealth: Math.floor(Math.random() * 5) + 95,
-      blockNumber: 21133000 + Math.floor(Math.random() * 1000),
-      timestamp: Date.now(),
-      chainId: MONAD_TESTNET_CONFIG.chainId,
-      chainName: MONAD_TESTNET_CONFIG.chainName
-    }
-  } catch (error) {
-    console.error('Failed to fetch Monad metrics:', error)
+    // NO MOCK DATA - Return null if real data fails
+    console.error('❌ No real data available - connection failed')
+    return null
     
-    // Final fallback
-    return {
-      tps: 85,
-      gasPrice: 0.3,
-      blockTime: 0.6,
-      networkHealth: 97,
-      blockNumber: 21133000,
-      timestamp: Date.now(),
-      chainId: MONAD_TESTNET_CONFIG.chainId,
-      chainName: MONAD_TESTNET_CONFIG.chainName
-    }
+  } catch (error) {
+    console.error('❌ Failed to fetch Monad metrics:', error)
+    return null // NO MOCK DATA
   }
 }
 
@@ -201,17 +185,19 @@ export async function getNetworkStatus() {
       }
     }
     
+    // Return disconnected status if no real data
     return {
       connected: false,
       chainId: MONAD_TESTNET_CONFIG.chainId,
       blockNumber: 0,
       rpcUrl: MONAD_TESTNET_CONFIG.rpcEndpoints[currentProviderIndex],
       explorerUrl: MONAD_TESTNET_CONFIG.blockExplorers[0],
-      gasPrice: 0.3,
-      lastUpdate: new Date()
+      gasPrice: 0,
+      lastUpdate: new Date(),
+      error: 'Unable to connect to Monad testnet'
     }
   } catch (error) {
-    console.error('Failed to fetch network status:', error)
+    console.error('❌ Failed to fetch network status:', error)
     
     return {
       connected: false,
@@ -219,95 +205,106 @@ export async function getNetworkStatus() {
       blockNumber: 0,
       rpcUrl: MONAD_TESTNET_CONFIG.rpcEndpoints[currentProviderIndex],
       explorerUrl: MONAD_TESTNET_CONFIG.blockExplorers[0],
-      gasPrice: 0.3,
-      lastUpdate: new Date()
+      gasPrice: 0,
+      lastUpdate: new Date(),
+      error: error instanceof Error ? error.message : 'Connection failed'
     }
   }
 }
 
 export async function getRecentTransactions() {
   try {
-    console.log('🔄 Fetching real transactions...')
+    console.log('🔄 Fetching ONLY real transactions from Monad testnet...')
     
     const provider = await getWorkingProvider()
     const latestBlock = await provider.getBlock('latest', true)
     
-    if (latestBlock && latestBlock.transactions && latestBlock.transactions.length > 0) {
-      // Get real transactions from latest blocks
-      const transactions = []
-      const blockPromises = []
-      
-      // Fetch last 3 blocks for more transactions
-      for (let i = 0; i < 3; i++) {
-        const blockNumber = latestBlock.number - i
-        if (blockNumber > 0) {
-          blockPromises.push(provider.getBlock(blockNumber, true))
-        }
-      }
-      
-      const blocks = await Promise.all(blockPromises)
-      
-      // Process real transactions
-      for (const block of blocks) {
-        if (block && block.transactions) {
-          for (let i = 0; i < Math.min(block.transactions.length, 10); i++) {
-            const txHash = block.transactions[i]
-            
-            try {
-              // For performance, just use transaction hash and block data
-              const txType = ['transfer', 'contract', 'swap', 'mint'][Math.floor(Math.random() * 4)]
-              
-              transactions.push({
-                id: typeof txHash === 'string' ? txHash : `0x${Math.random().toString(16).substr(2, 8)}`,
-                type: txType,
-                from: `0x${Math.random().toString(16).substr(2, 40)}`,
-                to: `0x${Math.random().toString(16).substr(2, 40)}`,
-                amount: (Math.random() * 10).toFixed(4),
-                status: 'confirmed',
-                timestamp: block.timestamp * 1000,
-                gasUsed: Math.floor(Math.random() * 50000) + 21000,
-                gasPrice: Math.random() * 0.5 + 0.1, // Real-ish gas price range
-                blockNumber: block.number
-              })
-            } catch (txError) {
-              console.warn(`Failed to fetch transaction details: ${txError}`)
-            }
-          }
-        }
-      }
-      
-      if (transactions.length > 0) {
-        console.log(`✅ Fetched ${transactions.length} real transactions`)
-        return transactions.slice(0, 20) // Return latest 20
+    if (!latestBlock) {
+      console.error('❌ Could not fetch latest block')
+      return []
+    }
+    
+    const transactions = []
+    const blockPromises = []
+    
+    // Fetch last 5 blocks for more real transactions
+    for (let i = 0; i < 5; i++) {
+      const blockNumber = latestBlock.number - i
+      if (blockNumber > 0) {
+        blockPromises.push(provider.getBlock(blockNumber, true))
       }
     }
-  } catch (error) {
-    console.warn('⚠️ Failed to fetch real transactions, using fallback:', error)
-  }
-  
-  // Fallback to simulated transactions
-  const transactions = []
-  const currentTime = Date.now()
-  
-  for (let i = 0; i < 20; i++) {
-    const txType = ['transfer', 'contract', 'swap', 'mint'][Math.floor(Math.random() * 4)]
-    const status = Math.random() > 0.05 ? 'confirmed' : 'failed' // 95% success rate
     
-    transactions.push({
-      id: `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
-      type: txType,
-      from: `0x${Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
-      to: `0x${Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
-      amount: (Math.random() * 10).toFixed(4),
-      status,
-      timestamp: currentTime - (i * 2000) - Math.random() * 2000, // Last few seconds
-      gasUsed: Math.floor(Math.random() * 50000) + 21000,
-      gasPrice: Math.random() * 0.5 + 0.1, // Updated gas price range
-      blockNumber: 21133000 + Math.floor(Math.random() * 100) - i
-    })
+    const blocks = await Promise.all(blockPromises)
+    
+    // Process ONLY real transactions
+    for (const block of blocks) {
+      if (block && block.transactions && block.transactions.length > 0) {
+        // Get actual transaction details
+        for (let i = 0; i < Math.min(block.transactions.length, 5); i++) {
+          const txHash = block.transactions[i]
+          
+          try {
+            if (typeof txHash === 'string') {
+              // Get real transaction details
+              const tx = await provider.getTransaction(txHash)
+              
+              if (tx) {
+                // Determine real transaction type
+                let txType: 'transfer' | 'contract' | 'swap' | 'mint' = 'transfer'
+                if (tx.to === null) {
+                  txType = 'contract' // Contract creation
+                } else if (tx.data && tx.data !== '0x' && tx.data.length > 10) {
+                  // Check method signature for common patterns
+                  const methodSig = tx.data.slice(0, 10)
+                  if (methodSig === '0xa9059cbb' || methodSig === '0x23b872dd') {
+                    txType = 'transfer' // ERC20 transfer
+                  } else if (methodSig === '0x40c10f19') {
+                    txType = 'mint' // Mint function
+                  } else {
+                    txType = 'contract' // Other contract interaction
+                  }
+                }
+                
+                transactions.push({
+                  id: tx.hash,
+                  type: txType,
+                  from: tx.from,
+                  to: tx.to || '0x0000000000000000000000000000000000000000',
+                  amount: ethers.formatEther(tx.value || 0),
+                  status: 'confirmed', // Since it's in a block
+                  timestamp: block.timestamp * 1000,
+                  gasUsed: Number(tx.gasLimit || 21000),
+                  gasPrice: parseFloat(ethers.formatUnits(tx.gasPrice || 0, 'gwei')),
+                  blockNumber: block.number
+                })
+              }
+            }
+          } catch (txError) {
+            console.warn(`⚠️ Failed to get details for tx ${txHash}:`, txError)
+            continue
+          }
+          
+          // Stop if we have enough transactions
+          if (transactions.length >= 20) break
+        }
+      }
+      
+      if (transactions.length >= 20) break
+    }
+    
+    if (transactions.length > 0) {
+      console.log(`✅ Fetched ${transactions.length} REAL transactions from Monad testnet`)
+      return transactions.slice(0, 20)
+    } else {
+      console.log('ℹ️ No transactions found in recent blocks')
+      return []
+    }
+    
+  } catch (error) {
+    console.error('❌ Failed to fetch real transactions:', error)
+    return [] // NO MOCK DATA - return empty array if real data fails
   }
-  
-  return transactions
 }
 
 export function getValidators() {
@@ -360,71 +357,86 @@ export function getExplorerUrl(type: 'tx' | 'block' | 'address', hash: string) {
 
 export async function getChartData() {
   try {
-    console.log('🔄 Generating chart data from real metrics...')
+    console.log('🔄 Generating chart data from REAL Monad testnet blocks...')
     
-    // Get current real metrics as baseline
-    const currentMetrics = await getMonadMetrics()
-    const chartData = []
-    const now = Date.now()
+    const provider = await getWorkingProvider()
+    const latestBlock = await provider.getBlock('latest')
     
-    // Generate 24 hours of data points (every 30 minutes = 48 points)
-    for (let i = 47; i >= 0; i--) {
-      const timestamp = new Date(now - i * 30 * 60 * 1000) // 30 minutes ago
-      
-      // Use real current values as baseline with historical variation
-      const baselineTPS = currentMetrics.tps || 85
-      const baselineGasPrice = currentMetrics.gasPrice || 0.3
-      const baselineBlockTime = currentMetrics.blockTime || 0.6
-      const baselineNetworkHealth = currentMetrics.networkHealth || 97
-      
-      // Add realistic historical variation
-      const tpsVariation = (Math.sin(i * 0.2) + Math.random() - 0.5) * 15
-      const gasPriceVariation = (Math.sin(i * 0.15) + Math.random() - 0.5) * 0.1
-      const blockTimeVariation = (Math.random() - 0.5) * 0.2
-      const healthVariation = (Math.random() - 0.5) * 3
-      
-      chartData.push({
-        timestamp: timestamp.toLocaleTimeString('en-US', { 
-          hour12: false, 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        }),
-        tps: Math.max(0, Math.round(baselineTPS + tpsVariation)),
-        gasPrice: Math.max(0.05, Number((baselineGasPrice + gasPriceVariation).toFixed(4))),
-        blockTime: Math.max(0.4, Number((baselineBlockTime + blockTimeVariation).toFixed(2))),
-        networkHealth: Math.max(85, Math.min(100, Math.round(baselineNetworkHealth + healthVariation))),
-        blockNumber: currentMetrics.blockNumber ? currentMetrics.blockNumber - (i * 20) : 21133000 - (i * 20)
-      })
+    if (!latestBlock) {
+      console.error('❌ Could not fetch latest block for chart data')
+      return []
     }
     
-    console.log(`✅ Generated ${chartData.length} chart data points based on real metrics`)
-    return chartData
+    const dataPoints: ChartDataPoint[] = []
+    const blockPromises = []
+    
+    // Fetch last 24 blocks for real historical data
+    for (let i = 0; i < 24; i++) {
+      const blockNumber = latestBlock.number - i
+      if (blockNumber > 0) {
+        blockPromises.push(provider.getBlock(blockNumber, true))
+      }
+    }
+    
+    const blocks = await Promise.all(blockPromises)
+    
+    // Process real block data
+    for (let i = 0; i < blocks.length; i++) {
+      const block = blocks[i]
+      const previousBlock = blocks[i + 1]
+      
+      if (block) {
+        // Calculate real TPS from consecutive blocks
+        let realTPS = 0
+        let realBlockTime = 0.6
+        
+        if (previousBlock && block.timestamp > previousBlock.timestamp) {
+          const timeDiff = block.timestamp - previousBlock.timestamp
+          const txCount = block.transactions?.length || 0
+          realTPS = timeDiff > 0 ? Math.round(txCount / timeDiff) : 0
+          realBlockTime = timeDiff
+        }
+        
+        // Get real gas price from block
+        let realGasPrice = 50.0 // Default Monad gas price
+        if (block.transactions && block.transactions.length > 0) {
+          try {
+            // Sample first transaction for gas price
+            const firstTx = await provider.getTransaction(block.transactions[0] as string)
+            if (firstTx && firstTx.gasPrice) {
+              realGasPrice = parseFloat(ethers.formatUnits(firstTx.gasPrice, 'gwei'))
+            }
+          } catch (error) {
+            console.warn('Could not fetch gas price from transaction')
+          }
+        }
+        
+        // Calculate network health based on block utilization
+        const gasUsed = Number(block.gasUsed || 0)
+        const gasLimit = Number(block.gasLimit || 1)
+        const utilization = gasLimit > 0 ? (gasUsed / gasLimit) * 100 : 0
+        const networkHealth = Math.min(100, Math.max(85, 100 - (utilization * 0.15)))
+        
+        dataPoints.push({
+          timestamp: new Date(block.timestamp * 1000).toISOString(),
+          tps: Math.max(0, realTPS),
+          gasPrice: realGasPrice,
+          blockTime: realBlockTime,
+          networkHealth: Math.round(networkHealth),
+          blockNumber: block.number
+        })
+      }
+    }
+    
+    // Sort by timestamp (oldest first)
+    dataPoints.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+    
+    console.log(`✅ Generated ${dataPoints.length} chart points from REAL Monad blocks`)
+    return dataPoints
     
   } catch (error) {
-    console.warn('⚠️ Failed to generate chart data from real metrics, using fallback:', error)
-    
-    // Fallback chart data
-    const chartData = []
-    const now = Date.now()
-    
-    for (let i = 47; i >= 0; i--) {
-      const timestamp = new Date(now - i * 30 * 60 * 1000)
-      
-      chartData.push({
-        timestamp: timestamp.toLocaleTimeString('en-US', { 
-          hour12: false, 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        }),
-        tps: Math.floor(Math.random() * 50) + 80, // 80-130 TPS
-        gasPrice: Number((Math.random() * 0.4 + 0.1).toFixed(4)), // 0.1-0.5 Gwei
-        blockTime: Number((Math.random() * 0.3 + 0.5).toFixed(2)), // 0.5-0.8s
-        networkHealth: Math.floor(Math.random() * 10) + 90, // 90-100%
-        blockNumber: 21133000 - (i * 20)
-      })
-    }
-    
-    return chartData
+    console.error('❌ Failed to generate chart data from real blocks:', error)
+    return [] // NO MOCK DATA - return empty array if real data fails
   }
 }
 
