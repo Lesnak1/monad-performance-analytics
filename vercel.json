@@ -9,7 +9,8 @@
       "src": "frontend/package.json",
       "use": "@vercel/next",
       "config": {
-        "distDir": ".next"
+        "distDir": ".next",
+        "buildCommand": "npm ci --prefer-offline --no-audit --progress=false && npm run build"
       }
     }
   ],
@@ -22,7 +23,12 @@
   "env": {
     "NEXT_PUBLIC_MONAD_RPC_URL": "https://testnet-rpc.monad.xyz",
     "NEXT_PUBLIC_CHAIN_ID": "41454",
-    "NEXT_PUBLIC_MISSION_MODE": "true"
+    "NEXT_PUBLIC_MISSION_MODE": "true",
+    "NPM_CONFIG_REGISTRY": "https://registry.npmjs.org/",
+    "NPM_CONFIG_FETCH_RETRIES": "5",
+    "NPM_CONFIG_FETCH_RETRY_FACTOR": "2",
+    "NPM_CONFIG_FETCH_RETRY_MINTIMEOUT": "10000",
+    "NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT": "60000"
   },
   "functions": {
     "frontend/pages/api/**/*.js": {
