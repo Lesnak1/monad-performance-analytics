@@ -2,6 +2,9 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
+  "/": "pages/index.js",
+  "/api/network-status": "pages/api/network-status.js",
+  "/api/transactions": "pages/api/transactions.js",
   "/api/metrics": "pages/api/metrics.js",
-  "/api/transactions": "pages/api/transactions.js"
+  "/api/monad-metrics": "pages/api/monad-metrics.js"
 }

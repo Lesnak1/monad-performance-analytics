@@ -1,23 +1,24 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { ethers } from 'ethers'
 
-// Directly implement metrics fetching to avoid circular dependency
+// Monad Testnet Configuration with Optimized RPC Endpoints
 const MONAD_TESTNET_CONFIG = {
   chainId: 10143,
   chainName: 'Monad Testnet',
   nativeToken: 'MON',
   rpcEndpoints: [
-    'https://testnet-rpc.monad.xyz',           
-    'https://monad-testnet.rpc.hypersync.xyz', 
-    'https://10143.rpc.hypersync.xyz',         
-    'https://10143.rpc.thirdweb.com',          
-    'https://monad-testnet.drpc.org'           
+    'https://testnet-rpc.monad.xyz',           // Official RPC (Most Reliable)
+    'https://monad-testnet.rpc.hypersync.xyz', // Envio HyperRPC 
+    'https://10143.rpc.hypersync.xyz',         // Envio Alternative
+    'https://10143.rpc.thirdweb.com',          // Thirdweb fallback
+    'https://monad-testnet.drpc.org'           // DRPC (Limited to 3 batch - use as fallback)
   ]
 }
 
+// Cache for performance
 let cachedMetrics: any = null
 let lastFetch = 0
-const CACHE_DURATION = 3000
+const CACHE_DURATION = 3000 // 3 seconds cache for real-time feel
 
 async function getWorkingProvider(): Promise<ethers.JsonRpcProvider> {
   for (let i = 0; i < MONAD_TESTNET_CONFIG.rpcEndpoints.length; i++) {
@@ -25,6 +26,7 @@ async function getWorkingProvider(): Promise<ethers.JsonRpcProvider> {
       const endpoint = MONAD_TESTNET_CONFIG.rpcEndpoints[i]
       const provider = new ethers.JsonRpcProvider(endpoint, MONAD_TESTNET_CONFIG.chainId)
       
+      // Test connection with shorter timeout for faster failover
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 5000)
       
@@ -38,9 +40,11 @@ async function getWorkingProvider(): Promise<ethers.JsonRpcProvider> {
       ])
       
       clearTimeout(timeoutId)
+      console.log(`✅ Connected to ${endpoint}`)
       return provider
       
     } catch (error) {
+      console.warn(`⚠️ RPC ${i + 1} (${MONAD_TESTNET_CONFIG.rpcEndpoints[i]}) failed, trying next...`)
       continue
     }
   }
@@ -48,7 +52,7 @@ async function getWorkingProvider(): Promise<ethers.JsonRpcProvider> {
   throw new Error('All RPC endpoints failed')
 }
 
-async function fetchMetricsData() {
+async function fetchMonadMetrics() {
   const now = Date.now()
   
   if (cachedMetrics && (now - lastFetch < CACHE_DURATION)) {
@@ -56,20 +60,28 @@ async function fetchMetricsData() {
   }
 
   try {
+    console.log('🔄 Fetching real Monad testnet data...')
+    
     const provider = await getWorkingProvider()
+    
+    // First get current block number to ensure we're working with fresh data
     const latestBlockNumber = await provider.getBlockNumber()
     
+    // CRITICAL: Limit to MAX 3 parallel requests to avoid DRPC batch limit
+    // Split into two sequential batches
     const [blockNumber, feeData, latestBlock] = await Promise.all([
       Promise.resolve(latestBlockNumber),
       provider.getFeeData(),
-      provider.getBlock(latestBlockNumber, true)
+      provider.getBlock(latestBlockNumber, true) // Get current block with transactions
     ])
 
+    // Second batch - get previous block for TPS calculation
     const previousBlock = await provider.getBlock(latestBlockNumber - 1, true)
 
     if (latestBlock) {
+      // Calculate real TPS from recent blocks with better logic
       let realTPS = 0
-      let blockTime = 0.6
+      let blockTime = 0.6 // Default Monad block time
       
       if (previousBlock && latestBlock.timestamp > previousBlock.timestamp) {
         const timeDiff = latestBlock.timestamp - previousBlock.timestamp
@@ -78,18 +90,24 @@ async function fetchMetricsData() {
         
         if (timeDiff > 0) {
           realTPS = Math.round(txCount / timeDiff)
+          
+          // Handle edge cases for accurate TPS
           if (realTPS === 0 && txCount > 0) {
-            realTPS = Math.round(txCount / 0.6)
+            realTPS = Math.round(txCount / 0.6) // Use standard block time
           }
+          
+          // Cap unrealistic TPS values
           if (realTPS > 10000) {
             realTPS = Math.round(txCount / Math.max(timeDiff, 0.3))
           }
         }
       }
 
+      // Calculate network health based on recent activity
       const networkHealth = latestBlock.transactions?.length > 0 ? 
         Math.min(99, 95 + Math.floor((latestBlock.transactions.length / 100) * 4)) : 95
 
+      // Real network data with current timestamp
       const realData = {
         success: true,
         data: {
@@ -97,8 +115,8 @@ async function fetchMetricsData() {
           gasPrice: feeData.gasPrice ? parseFloat(ethers.formatUnits(feeData.gasPrice, 'gwei')) : 0,
           blockTime,
           networkHealth,
-          blockNumber: latestBlockNumber,
-          timestamp: now,
+          blockNumber: latestBlockNumber, // Use the fresh block number
+          timestamp: now, // Current timestamp for real-time feel
           chainId: MONAD_TESTNET_CONFIG.chainId,
           chainName: MONAD_TESTNET_CONFIG.chainName,
           transactionCount: latestBlock.transactions?.length || 0,
@@ -113,10 +131,16 @@ async function fetchMetricsData() {
       
       cachedMetrics = realData
       lastFetch = now
+      
+      console.log(`✅ Real data fetched: Block ${latestBlockNumber}, TPS ${realTPS}, Txs ${latestBlock.transactions?.length || 0}`)
       return realData
     }
   } catch (error) {
+    console.error('❌ Failed to fetch real data:', error)
+    
+    // Return cached data if available on error
     if (cachedMetrics) {
+      console.log('📦 Returning cached data due to fetch error')
       return cachedMetrics
     }
     
@@ -140,7 +164,10 @@ async function fetchMetricsData() {
   }
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
@@ -153,30 +180,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    return res.status(405).json({ 
+      success: false, 
+      error: 'Method not allowed',
+      timestamp: new Date().toISOString()
+    })
   }
 
   try {
-    const metrics = await fetchMetricsData()
-    
-    // Add additional timestamp for compatibility
-    const enhancedResponse = {
-      ...metrics,
-      timestamp: Date.now(),
-      status: metrics.success ? 'success' : 'error'
-    }
-
-    res.status(200).json(enhancedResponse)
-    
+    const metrics = await fetchMonadMetrics()
+    res.status(200).json(metrics)
   } catch (error) {
-    console.error('❌ Metrics API Error:', error)
-    
+    console.error('API Error:', error)
     res.status(500).json({
-      error: 'Failed to fetch metrics',
+      success: false,
+      error: 'Internal server error',
       message: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: Date.now(),
-      status: 'error',
-      success: false
+      timestamp: new Date().toISOString()
     })
   }
 } 

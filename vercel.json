@@ -1,6 +1,9 @@
 {
-  "name": "mpas-analytics",
-  "version": 2,
+  "framework": "nextjs",
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/.next",
+  "installCommand": "cd frontend && npm install",
+  "devCommand": "cd frontend && npm run dev",
   "cleanUrls": true,
   "trailingSlash": false,
   "source": "frontend",
@@ -28,57 +31,37 @@
     "NPM_CONFIG_FETCH_RETRIES": "5",
     "NPM_CONFIG_FETCH_RETRY_FACTOR": "2",
     "NPM_CONFIG_FETCH_RETRY_MINTIMEOUT": "10000",
-    "NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT": "60000"
+    "NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT": "60000",
+    "NEXT_PUBLIC_API_URL": "https://your-domain.vercel.app"
   },
   "functions": {
-    "frontend/pages/api/**/*.js": {
+    "frontend/pages/api/*.ts": {
       "maxDuration": 30
     }
   },
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
       "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" },
+        { "key": "Cache-Control", "value": "s-maxage=5, stale-while-revalidate" }
       ]
     },
     {
-      "source": "/api/**",
+      "source": "/(.*)",
       "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "X-Requested-With, Content-Type, Authorization"
-        }
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
       ]
     }
   ],
   "rewrites": [
     {
-      "source": "/",
-      "destination": "/frontend"
+      "source": "/dashboard",
+      "destination": "/"
     }
   ]
 } 

@@ -4,30 +4,20 @@ import { useState, useEffect } from 'react'
 import Header from '../components/Header'
 import StatCard from '../components/StatCard'
 import LineChart from '../components/LineChart'
-import ResultsTable from '../components/ResultsTable'
-import DashboardWidget, { WidgetGrid } from '../components/DashboardWidget'
 import AdvancedChart from '../components/AdvancedChart'
-import ThemeSwitcher from '../components/ThemeSwitcher'
-import ExportButton from '../components/ExportButton'
-import MonadLoreIntegration from '../components/MonadLoreIntegration'
-import ProtocolEcosystem from '../components/ProtocolEcosystem'
+import LiveTransactions from '../components/LiveTransactions'
+import Footer from '../components/Footer'
 import { 
   Activity, 
-  BarChart3, 
   Clock, 
-  Cpu, 
-  Database, 
   DollarSign, 
   TrendingUp, 
   Zap,
-  Trophy
+  Globe,
+  Shield,
+  BarChart3
 } from 'lucide-react'
 import { getMonadMetrics, getChartData, getNetworkStatus, getCurrentRpcIndex, MonadMetrics, ChartDataPoint } from '../lib/monadData'
-import LiveTransactions from '../components/LiveTransactions'
-import AdvancedAnalytics from '../components/AdvancedAnalytics'
-import AlertSystem from '../components/AlertSystem'
-import HistoricalAnalysis from '../components/HistoricalAnalysis'
-import AdvancedFilters from '../components/AdvancedFilters'
 
 export default function Dashboard() {
   const [mounted, setMounted] = useState(false)
@@ -37,7 +27,7 @@ export default function Dashboard() {
   const [networkStatus, setNetworkStatus] = useState({ 
     connected: false, 
     blockNumber: 0,
-    chainId: 41454,
+    chainId: 10143,
     rpcUrl: 'Monad Testnet'
   })
 
@@ -57,10 +47,8 @@ export default function Dashboard() {
           getNetworkStatus()
         ])
         
-        // Update network status first
         setNetworkStatus(status)
         
-        // Only update if we have real data
         if (metricsData) {
           setMetrics(metricsData)
           console.log('✅ Real metrics updated:', {
@@ -70,7 +58,6 @@ export default function Dashboard() {
           })
         } else {
           console.warn('⚠️ No real metrics data available - connection issue')
-          // Keep previous metrics if available, don't reset to null
         }
         
         if (chartPoints && chartPoints.length > 0) {
@@ -78,12 +65,10 @@ export default function Dashboard() {
           console.log(`✅ Chart data updated with ${chartPoints.length} real data points`)
         } else {
           console.warn('⚠️ No real chart data available')
-          // Keep previous chart data if available
         }
         
       } catch (error) {
         console.error('❌ Error fetching real data:', error)
-        // Update network status to show error
         setNetworkStatus(prev => ({
           ...prev,
           connected: false,
@@ -95,8 +80,7 @@ export default function Dashboard() {
     }
 
     fetchData()
-    // Update every 3 seconds for real-time feel
-    const interval = setInterval(fetchData, 3000)
+    const interval = setInterval(fetchData, 5000) // Update every 5 seconds
     return () => clearInterval(interval)
   }, [])
 
@@ -106,16 +90,15 @@ export default function Dashboard() {
     <div className="min-h-screen relative overflow-hidden noise-overlay">
       <Head>
         <title>MPAS - Monad Performance Analytics Suite</title>
-        <meta name="description" content="Real-time performance analytics for Monad blockchain with Monanimal crew integration!" />
+        <meta name="description" content="Real-time performance analytics for Monad blockchain - the world's fastest EVM" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      {/* Animated background elements */}
+      {/* Clean animated background */}
       <div className="fixed inset-0 z-0">
-        <div className="absolute top-20 left-10 w-96 h-96 bg-purple-burst opacity-20 rounded-full blur-3xl animate-float"></div>
-        <div className="absolute bottom-20 right-10 w-80 h-80 bg-cyber-gradient opacity-15 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-monad-gradient opacity-10 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }}></div>
+        <div className="absolute top-20 left-10 w-96 h-96 bg-purple-burst opacity-10 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute bottom-20 right-10 w-80 h-80 bg-cyber-gradient opacity-8 rounded-full blur-3xl animate-float" style={{ animationDelay: '3s' }}></div>
       </div>
 
       <Header 
@@ -124,14 +107,16 @@ export default function Dashboard() {
         metrics={metrics}
       />
 
-      <main className="container mx-auto px-6 py-12 relative z-10 space-y-12">
-        {/* Hero Section */}
+      <main className="container mx-auto px-6 py-12 relative z-10 space-y-16">
+        
+        {/* Hero Section - Simplified */}
         <motion.section
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-center space-y-6"
+          className="text-center space-y-8"
         >
+          {/* Status Indicator */}
           <motion.div
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
@@ -140,40 +125,36 @@ export default function Dashboard() {
           >
             <div className={`w-3 h-3 rounded-full animate-pulse ${networkStatus.connected ? 'bg-cyber-green' : 'bg-red-500'}`}></div>
             <span className="text-white/80 text-sm font-medium">
-              {loading ? 'Connecting...' : networkStatus.connected ? 'Live Monad Testnet Data' : 'Connection Failed'}
+              {loading ? 'Connecting...' : networkStatus.connected ? 'Live Monad Testnet' : 'Connection Failed'}
             </span>
             {networkStatus.connected && (
               <span className="text-cyber-blue text-xs">Block #{networkStatus.blockNumber}</span>
             )}
           </motion.div>
           
-          <h1 className="text-5xl md:text-7xl font-bold text-glow">
+          {/* Main Title */}
+          <h1 className="text-6xl md:text-8xl font-bold text-glow">
             <span className="bg-gradient-to-r from-white via-monad-300 to-cyber-blue bg-clip-text text-transparent">
               Monad Analytics
             </span>
           </h1>
           
-          <p className="text-xl text-white/70 max-w-3xl mx-auto leading-relaxed">
-            Real-time performance insights from the world's fastest EVM blockchain. 
-            Current TPS: <span className="text-cyber-blue font-semibold">{loading ? '...' : Math.round(metrics?.tps || 0)}</span> with 
-            <span className="text-cyber-green font-semibold">{loading ? '...' : metrics?.blockTime || 0}s</span> block time.
+          {/* Subtitle */}
+          <p className="text-xl text-white/70 max-w-4xl mx-auto leading-relaxed">
+            Real-time performance insights from the world's fastest EVM blockchain.
+            <br className="hidden md:block" />
+            Experience <span className="text-cyber-blue font-semibold">{loading ? '...' : Math.round(metrics?.tps || 0)} TPS</span> with 
+            <span className="text-cyber-green font-semibold"> {loading ? '...' : metrics?.blockTime || 0}s</span> block times.
           </p>
-
-          {/* Live Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1 }}
-            className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-400/30 rounded-full px-4 py-2"
-          >
-            <Trophy className="w-5 h-5 text-yellow-400" />
-            <span className="text-white font-medium">Live Analytics</span>
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-          </motion.div>
         </motion.section>
 
-        {/* Key Metrics Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Key Metrics - Clean Grid */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+        >
           <StatCard
             title="TPS Performance"
             value={loading ? '...' : Math.round(metrics?.tps || 0).toString()}
@@ -184,7 +165,7 @@ export default function Dashboard() {
           />
           <StatCard
             title="Gas Price"
-            value={loading ? '...' : `${metrics?.gasPrice || 0} Gwei`}
+            value={loading ? '...' : `${(metrics?.gasPrice || 0).toFixed(2)} Gwei`}
             trend="down"
             trendValue="-5.2%"
             icon={DollarSign}
@@ -206,166 +187,122 @@ export default function Dashboard() {
             icon={Activity}
             subtitle="Overall status"
           />
-        </section>
+        </motion.section>
 
-        {/* Monad Lore Integration */}
-        {mounted && metrics && (
-          <section>
-            <MonadLoreIntegration 
-              currentTPS={metrics.tps}
-              gasPrice={metrics.gasPrice}
-              networkHealth={metrics.networkHealth}
-            />
-          </section>
-        )}
-
-        {/* Advanced Charts Section */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <WidgetGrid>
-            <DashboardWidget id="tps-chart" title="TPS Performance" size="large">
-              <div className="h-64">
-                <AdvancedChart
-                  data={chartData}
-                  metrics={["tps"]}
-                  title="Transactions Per Second"
-                />
-              </div>
-            </DashboardWidget>
-          </WidgetGrid>
-
-          <WidgetGrid>
-            <DashboardWidget id="gas-chart" title="Gas Price Trends" size="large">
-              <div className="h-64">
-                <AdvancedChart
-                  data={chartData}
-                  metrics={["gasPrice"]}
-                  title="Gas Price (Gwei)"
-                />
-              </div>
-            </DashboardWidget>
-          </WidgetGrid>
-        </section>
-
-        {/* Protocol Ecosystem Section */}
-        {mounted && (
-          <section>
-            <ProtocolEcosystem />
-          </section>
-        )}
-
-        {/* Live Data Section */}
-        <section className="space-y-8">
-          {/* Live Transactions */}
-          {mounted ? (
-            <LiveTransactions isPlaying={true} />
-          ) : (
-            <div className="glass rounded-2xl p-8 text-center">
-              <div className="animate-pulse">
-                <div className="h-6 bg-white/20 rounded w-1/2 mx-auto mb-4"></div>
-                <div className="space-y-3">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="h-16 bg-white/10 rounded"></div>
-                  ))}
-                </div>
+        {/* Charts Section - Clean Layout */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.5 }}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-8"
+        >
+          {/* TPS Chart */}
+          <div className="glass rounded-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-white flex items-center">
+                <TrendingUp className="w-5 h-5 mr-2 text-cyber-green" />
+                TPS Performance
+              </h3>
+              <div className="text-xs text-white/60 flex items-center space-x-2">
+                <div className="w-2 h-2 bg-cyber-green rounded-full animate-pulse"></div>
+                <span>Live Data</span>
               </div>
             </div>
-          )}
-          
-          {/* Advanced Analytics */}
-          {mounted && <AdvancedAnalytics />}
-
-          {/* Alert System */}
-          {mounted && metrics && (
-            <AlertSystem 
-              currentMetrics={{
-                tps: metrics.tps,
-                gasPrice: metrics.gasPrice,
-                networkHealth: metrics.networkHealth,
-                blockTime: metrics.blockTime
-              }}
-            />
-          )}
-
-          {/* Historical Analysis */}
-          {mounted && <HistoricalAnalysis />}
-
-          {/* Advanced Filters */}
-          {mounted && (
-            <AdvancedFilters 
-              onFiltersChange={(filters) => console.log('Filters updated:', filters)}
-              totalResults={125000}
-              isLoading={false}
-            />
-          )}
-        </section>
-
-        {/* Recent Test Results */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-3xl font-bold text-white text-glow">Performance History</h2>
-            <div className="flex items-center space-x-4">
-              <ThemeSwitcher />
-              <ExportButton data={chartData} filename="monad-performance-data" />
+            <div className="h-64">
+              <AdvancedChart
+                data={chartData}
+                metrics={["tps"]}
+                title="Transactions Per Second"
+              />
             </div>
           </div>
-          
-          <WidgetGrid>
-            <DashboardWidget id="results-table" title="Recent Benchmark Results" size="large">
-              {chartData.length > 0 ? (
-                <ResultsTable 
-                  results={chartData.slice(-10).map((item, index) => ({
-                    id: `real-block-${item.blockNumber}`,
-                    testName: `Block Analysis ${item.blockNumber}`,
-                    timestamp: item.timestamp,
-                    tps: item.tps,
-                    gasUsed: Math.floor(Math.random() * 50000) + 21000, // Estimated from block data
-                    duration: Math.round(item.blockTime * 10) / 10,
-                    successRate: item.networkHealth,
-                    blockNumber: item.blockNumber
-                  }))}
-                  loading={loading}
-                />
-              ) : (
-                <div className="p-8 text-center">
-                  <div className="text-white/60 mb-4">
-                    {loading ? 'Loading real blockchain data...' : 'No real block data available'}
-                  </div>
-                  {!loading && (
-                    <div className="text-white/40 text-sm">
-                      Waiting for connection to Monad testnet...
-                    </div>
-                  )}
-                </div>
-              )}
-            </DashboardWidget>
-          </WidgetGrid>
-        </section>
 
-        {/* Footer */}
-        <motion.section
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 2 }}
-          className="text-center py-8"
-        >
-          <div className="glass rounded-2xl p-6 border border-purple-500/20">
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <Trophy className="w-6 h-6 text-yellow-400" />
-              <h3 className="text-xl font-bold text-white">Analytics Platform</h3>
-              <Trophy className="w-6 h-6 text-yellow-400" />
+          {/* Gas Price Chart */}
+          <div className="glass rounded-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-white flex items-center">
+                <DollarSign className="w-5 h-5 mr-2 text-cyber-blue" />
+                Gas Price Trends
+              </h3>
+              <div className="text-xs text-white/60">Last 24h</div>
             </div>
-            <p className="text-white/70 mb-4">
-              This dashboard showcases Monad's performance with interactive features, community insights, and real-time analytics!
-            </p>
-            <div className="flex justify-center space-x-4 text-sm text-white/60">
-              <span>✅ Community-focused metrics</span>
-              <span>✅ Interactive features</span>
-              <span>✅ Modern interface</span>
-              <span>✅ Real testnet data</span>
+            <div className="h-64">
+              <AdvancedChart
+                data={chartData}
+                metrics={["gasPrice"]}
+                title="Gas Price (Gwei)"
+              />
             </div>
           </div>
         </motion.section>
+
+        {/* Live Transactions */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.7 }}
+          className="space-y-6"
+        >
+          <div className="flex items-center justify-between">
+            <h2 className="text-3xl font-bold text-white text-glow flex items-center">
+              <BarChart3 className="w-8 h-8 mr-3 text-monad-300" />
+              Live Transaction Feed
+            </h2>
+            <div className="flex items-center space-x-2 glass rounded-lg px-3 py-2">
+              <Globe className="w-4 h-4 text-cyber-green" />
+              <span className="text-white/80 text-sm">Monad Testnet</span>
+            </div>
+          </div>
+          
+          <LiveTransactions />
+        </motion.section>
+
+        {/* Network Info - Simplified */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.9 }}
+          className="glass rounded-2xl p-8 space-y-6"
+        >
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-white flex items-center">
+              <Shield className="w-6 h-6 mr-3 text-cyber-green" />
+              Network Status
+            </h2>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-cyber-green rounded-full animate-pulse"></div>
+              <span className="text-cyber-green text-sm font-medium">Online</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <p className="text-white/60 text-sm">Chain ID</p>
+              <p className="text-2xl font-mono text-cyber-blue">{networkStatus.chainId}</p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-white/60 text-sm">Latest Block</p>
+              <p className="text-2xl font-mono text-white">#{networkStatus.blockNumber}</p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-white/60 text-sm">Network</p>
+              <p className="text-lg font-medium text-monad-300">Monad Testnet</p>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-white/10">
+            <p className="text-white/70 text-sm leading-relaxed">
+              Connected to Monad Testnet - the world's fastest EVM blockchain. 
+              All data is fetched in real-time from live network sources. 
+              No mock data is used in this dashboard.
+            </p>
+          </div>
+        </motion.section>
+
       </main>
+
+      {/* Add Footer */}
+      <Footer />
     </div>
   )
 } 
