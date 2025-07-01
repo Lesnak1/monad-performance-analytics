@@ -2,7 +2,7 @@
 import { motion } from 'framer-motion'
 import { BarChart3, Zap, Activity } from 'lucide-react'
 import NetworkIndicator from './NetworkIndicator'
-import ThemeSwitcher from './ThemeSwitcher'
+// import ThemeSwitcher from './ThemeSwitcher' // Temporarily disabled for SSR
 import { QuickExportButtons } from './ExportButton'
 
 interface HeaderProps {
@@ -81,7 +81,7 @@ export default function Header({ networkStatus, currentRpcIndex, metrics }: Head
               filename="monad_realtime_metrics"
               title="Monad Real-time Metrics"
             />
-            <ThemeSwitcher />
+            {/* {/* <ThemeSwitcher /> Temporarily disabled for SSR */} Temporarily disabled for SSR */}
             {networkStatus && (
               <NetworkIndicator 
                 networkStatus={networkStatus} 
