@@ -1,11 +1,6 @@
 {
   "version": 2,
   "name": "monad-performance-analytics",
-  "build": {
-    "env": {
-      "NODE_ENV": "production"
-    }
-  },
   "framework": "nextjs",
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/.next",
@@ -13,33 +8,9 @@
   "devCommand": "cd frontend && npm run dev",
   "cleanUrls": true,
   "trailingSlash": false,
-  "source": "frontend",
-  "builds": [
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/next",
-      "config": {
-        "projectSettings": {
-          "framework": "nextjs"
-        },
-        "distDir": ".next",
-        "buildCommand": "npm ci --prefer-offline --no-audit --progress=false && npm run build"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/frontend/pages/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/frontend/$1"
-    }
-  ],
   "env": {
-    "NEXT_PUBLIC_MONAD_RPC_URL": "https://testnet-rpc.monad.xyz",
-    "NEXT_PUBLIC_CHAIN_ID": "41454",
+    "NEXT_PUBLIC_MONAD_RPC_URL": "https://monad-testnet.rpc.hypersync.xyz",
+    "NEXT_PUBLIC_CHAIN_ID": "10143",
     "NEXT_PUBLIC_MISSION_MODE": "true",
     "NPM_CONFIG_REGISTRY": "https://registry.npmjs.org/",
     "NPM_CONFIG_FETCH_RETRIES": "5",
