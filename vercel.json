@@ -1,4 +1,11 @@
 {
+  "version": 2,
+  "name": "monad-performance-analytics",
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
+  },
   "framework": "nextjs",
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/.next",
@@ -12,12 +19,19 @@
       "src": "frontend/package.json",
       "use": "@vercel/next",
       "config": {
+        "projectSettings": {
+          "framework": "nextjs"
+        },
         "distDir": ".next",
         "buildCommand": "npm ci --prefer-offline --no-audit --progress=false && npm run build"
       }
     }
   ],
   "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/frontend/pages/api/$1"
+    },
     {
       "src": "/(.*)",
       "dest": "/frontend/$1"
@@ -35,7 +49,7 @@
     "NEXT_PUBLIC_API_URL": "https://your-domain.vercel.app"
   },
   "functions": {
-    "frontend/pages/api/*.ts": {
+    "frontend/pages/api/**/*.ts": {
       "maxDuration": 30
     }
   },
@@ -44,9 +58,9 @@
       "source": "/api/(.*)",
       "headers": [
         { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" },
-        { "key": "Cache-Control", "value": "s-maxage=5, stale-while-revalidate" }
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" },
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
       ]
     },
     {
