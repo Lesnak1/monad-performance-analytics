@@ -1,34 +1,41 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { ethers } from 'ethers'
 
-// Monad Testnet Configuration with Optimized RPC Endpoints
+// Optimized Monad Testnet Configuration with Request Management
 const MONAD_TESTNET_CONFIG = {
   chainId: 10143,
   chainName: 'Monad Testnet',
   nativeToken: 'MON',
   rpcEndpoints: [
-    'https://testnet-rpc.monad.xyz',           // Official RPC (Most Reliable)
-    'https://monad-testnet.rpc.hypersync.xyz', // Envio HyperRPC 
+    'https://monad-testnet.rpc.hypersync.xyz', // Envio - Most stable for metrics
     'https://10143.rpc.hypersync.xyz',         // Envio Alternative
+    'https://testnet-rpc.monad.xyz',           // Official - Use sparingly due to rate limits
     'https://10143.rpc.thirdweb.com',          // Thirdweb fallback
-    'https://monad-testnet.drpc.org'           // DRPC (Limited to 3 batch - use as fallback)
+    'https://monad-testnet.drpc.org'           // DRPC - Batch limit aware
   ]
 }
 
-// Cache for performance
+// Enhanced caching and request management
 let cachedMetrics: any = null
 let lastFetch = 0
-const CACHE_DURATION = 3000 // 3 seconds cache for real-time feel
+let currentProviderIndex = 0
+let lastProviderSwitch = 0
+const CACHE_DURATION = 4000 // 4 seconds cache to reduce API calls
+const PROVIDER_SWITCH_COOLDOWN = 10000 // 10 seconds between provider switches
+const CONNECTION_TIMEOUT = 3000 // Reduced timeout for faster failover
 
 async function getWorkingProvider(): Promise<ethers.JsonRpcProvider> {
-  for (let i = 0; i < MONAD_TESTNET_CONFIG.rpcEndpoints.length; i++) {
+  const now = Date.now()
+  
+  // Try current provider first if not in cooldown
+  for (let attempts = 0; attempts < MONAD_TESTNET_CONFIG.rpcEndpoints.length; attempts++) {
     try {
-      const endpoint = MONAD_TESTNET_CONFIG.rpcEndpoints[i]
+      const endpoint = MONAD_TESTNET_CONFIG.rpcEndpoints[currentProviderIndex]
       const provider = new ethers.JsonRpcProvider(endpoint, MONAD_TESTNET_CONFIG.chainId)
       
-      // Test connection with shorter timeout for faster failover
+      // Quick connection test with shorter timeout
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000)
+      const timeoutId = setTimeout(() => controller.abort(), CONNECTION_TIMEOUT)
       
       await Promise.race([
         provider.getBlockNumber(),
@@ -40,12 +47,20 @@ async function getWorkingProvider(): Promise<ethers.JsonRpcProvider> {
       ])
       
       clearTimeout(timeoutId)
-      console.log(`✅ Connected to ${endpoint}`)
+      console.log(`✅ Connected to ${endpoint} (Provider ${currentProviderIndex + 1})`)
       return provider
       
     } catch (error) {
-      console.warn(`⚠️ RPC ${i + 1} (${MONAD_TESTNET_CONFIG.rpcEndpoints[i]}) failed, trying next...`)
-      continue
+      console.warn(`⚠️ Provider ${currentProviderIndex + 1} failed: ${error.message}`)
+      
+      // Switch to next provider with cooldown respect
+      if (now - lastProviderSwitch > PROVIDER_SWITCH_COOLDOWN || attempts === 0) {
+        currentProviderIndex = (currentProviderIndex + 1) % MONAD_TESTNET_CONFIG.rpcEndpoints.length
+        lastProviderSwitch = now
+      }
+      
+      // Add delay between attempts to avoid overwhelming providers
+      await new Promise(resolve => setTimeout(resolve, 500))
     }
   }
   
@@ -55,6 +70,7 @@ async function getWorkingProvider(): Promise<ethers.JsonRpcProvider> {
 async function fetchMonadMetrics() {
   const now = Date.now()
   
+  // Return cached data if fresh enough
   if (cachedMetrics && (now - lastFetch < CACHE_DURATION)) {
     return cachedMetrics
   }
@@ -64,50 +80,61 @@ async function fetchMonadMetrics() {
     
     const provider = await getWorkingProvider()
     
-    // First get current block number to ensure we're working with fresh data
+    // Get latest block number first
     const latestBlockNumber = await provider.getBlockNumber()
     
-    // CRITICAL: Limit to MAX 3 parallel requests to avoid DRPC batch limit
-    // Split into two sequential batches
-    const [blockNumber, feeData, latestBlock] = await Promise.all([
-      Promise.resolve(latestBlockNumber),
-      provider.getFeeData(),
-      provider.getBlock(latestBlockNumber, true) // Get current block with transactions
-    ])
-
-    // Second batch - get previous block for TPS calculation
+    // Use sequential requests to avoid batch limits and rate limiting
+    const feeData = await provider.getFeeData()
+    await new Promise(resolve => setTimeout(resolve, 100)) // Small delay
+    
+    const latestBlock = await provider.getBlock(latestBlockNumber, true)
+    await new Promise(resolve => setTimeout(resolve, 100)) // Small delay
+    
     const previousBlock = await provider.getBlock(latestBlockNumber - 1, true)
 
     if (latestBlock) {
-      // Calculate real TPS from recent blocks with better logic
+      // Enhanced TPS calculation with multiple block analysis
       let realTPS = 0
       let blockTime = 0.6 // Default Monad block time
+      let txCount = latestBlock.transactions?.length || 0
       
       if (previousBlock && latestBlock.timestamp > previousBlock.timestamp) {
         const timeDiff = latestBlock.timestamp - previousBlock.timestamp
-        const txCount = latestBlock.transactions?.length || 0
         blockTime = timeDiff
         
         if (timeDiff > 0) {
+          // Calculate TPS from current block
           realTPS = Math.round(txCount / timeDiff)
           
-          // Handle edge cases for accurate TPS
+          // Handle edge cases for more accurate TPS
           if (realTPS === 0 && txCount > 0) {
             realTPS = Math.round(txCount / 0.6) // Use standard block time
           }
           
-          // Cap unrealistic TPS values
-          if (realTPS > 10000) {
-            realTPS = Math.round(txCount / Math.max(timeDiff, 0.3))
+          // Cap unrealistic TPS values (Monad max ~10k TPS)
+          if (realTPS > 5000) {
+            realTPS = Math.round(txCount / Math.max(timeDiff, 0.5))
+          }
+          
+          // Ensure minimum realistic TPS for active blocks
+          if (txCount > 5 && realTPS < 10) {
+            realTPS = Math.round(txCount / 0.6)
           }
         }
+      } else if (txCount > 0) {
+        // Fallback calculation if previous block unavailable
+        realTPS = Math.round(txCount / 0.6)
       }
 
-      // Calculate network health based on recent activity
-      const networkHealth = latestBlock.transactions?.length > 0 ? 
-        Math.min(99, 95 + Math.floor((latestBlock.transactions.length / 100) * 4)) : 95
+      // Dynamic network health based on activity and TPS
+      let networkHealth = 95 // Base health
+      if (txCount > 0) {
+        networkHealth = Math.min(99, 90 + Math.floor((realTPS / 100) * 9))
+      }
+      if (realTPS > 50) networkHealth = Math.min(99, networkHealth + 2)
+      if (realTPS > 100) networkHealth = 99
 
-      // Real network data with current timestamp
+      // Enhanced real data structure
       const realData = {
         success: true,
         data: {
@@ -115,16 +142,18 @@ async function fetchMonadMetrics() {
           gasPrice: feeData.gasPrice ? parseFloat(ethers.formatUnits(feeData.gasPrice, 'gwei')) : 0,
           blockTime,
           networkHealth,
-          blockNumber: latestBlockNumber, // Use the fresh block number
-          timestamp: now, // Current timestamp for real-time feel
+          blockNumber: latestBlockNumber,
+          timestamp: now,
           chainId: MONAD_TESTNET_CONFIG.chainId,
           chainName: MONAD_TESTNET_CONFIG.chainName,
-          transactionCount: latestBlock.transactions?.length || 0,
+          transactionCount: txCount,
           gasUsed: latestBlock.gasUsed?.toString() || '0',
           gasLimit: latestBlock.gasLimit?.toString() || '0',
           blockHash: latestBlock.hash,
           lastBlockTime: latestBlock.timestamp,
-          avgBlockTime: blockTime
+          avgBlockTime: blockTime,
+          provider: MONAD_TESTNET_CONFIG.rpcEndpoints[currentProviderIndex],
+          providerIndex: currentProviderIndex
         },
         timestamp: new Date().toISOString()
       }
@@ -132,18 +161,19 @@ async function fetchMonadMetrics() {
       cachedMetrics = realData
       lastFetch = now
       
-      console.log(`✅ Real data fetched: Block ${latestBlockNumber}, TPS ${realTPS}, Txs ${latestBlock.transactions?.length || 0}`)
+      console.log(`✅ Real data fetched: Block ${latestBlockNumber}, TPS ${realTPS}, Txs ${txCount}`)
       return realData
     }
   } catch (error) {
     console.error('❌ Failed to fetch real data:', error)
     
-    // Return cached data if available on error
+    // Return cached data if available
     if (cachedMetrics) {
       console.log('📦 Returning cached data due to fetch error')
       return cachedMetrics
     }
     
+    // Fallback data structure
     return {
       success: false,
       error: 'Failed to fetch real-time data',
@@ -158,7 +188,9 @@ async function fetchMonadMetrics() {
         timestamp: now,
         chainId: MONAD_TESTNET_CONFIG.chainId,
         chainName: MONAD_TESTNET_CONFIG.chainName,
-        transactionCount: 0
+        transactionCount: 0,
+        provider: 'Unknown',
+        providerIndex: -1
       }
     }
   }

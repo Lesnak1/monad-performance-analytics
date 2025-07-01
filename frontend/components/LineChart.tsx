@@ -11,17 +11,20 @@ interface ChartDataPoint {
 
 interface LineChartProps {
   data: ChartDataPoint[]
-  metric: 'tps' | 'gasPrice'
-  title: string
+  dataKey: 'tps' | 'gasPrice'
+  title?: string
   color?: string
 }
 
 export default function CustomLineChart({ 
   data, 
-  metric, 
-  title, 
+  dataKey, 
+  title,
   color = '#8b5cf6' 
 }: LineChartProps) {
+  // Auto-generate title if not provided
+  const chartTitle = title || (dataKey === 'tps' ? 'TPS Performance' : 'Gas Price Trends')
+  
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -32,7 +35,7 @@ export default function CustomLineChart({
         >
           <p className="text-white/80 text-sm mb-2">{`Time: ${label}`}</p>
           <p className="text-cyber-blue font-medium">
-            {`${metric === 'tps' ? 'TPS' : 'Gas Price'}: ${metric === 'gasPrice' ? `${payload[0].value.toFixed(1)} Gwei` : Math.round(payload[0].value)}`}
+            {`${dataKey === 'tps' ? 'TPS' : 'Gas Price'}: ${dataKey === 'gasPrice' ? `${payload[0].value.toFixed(1)} Gwei` : Math.round(payload[0].value)}`}
           </p>
           {payload[0].payload.blockNumber && (
             <p className="text-white/60 text-xs mt-1">
@@ -49,9 +52,12 @@ export default function CustomLineChart({
   }
 
   const formatValue = (value: number) => {
-    if (metric === 'gasPrice') return `${value.toFixed(1)}`
+    if (dataKey === 'gasPrice') return `${value.toFixed(1)}`
     return Math.round(value).toString()
   }
+
+  // Auto-select color based on dataKey
+  const chartColor = color || (dataKey === 'tps' ? '#0ea5e9' : '#a855f7')
 
   return (
     <motion.div
@@ -62,7 +68,7 @@ export default function CustomLineChart({
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-semibold text-white flex items-center space-x-2">
           <div className="w-3 h-3 bg-cyber-green rounded-full animate-pulse"></div>
-          <span>{title}</span>
+          <span>{chartTitle}</span>
         </h3>
         <div className="text-sm text-white/60">
           Last 60 minutes • Live
@@ -87,15 +93,15 @@ export default function CustomLineChart({
             <Tooltip content={<CustomTooltip />} />
             <Line
               type="monotone"
-              dataKey={metric}
-              stroke={color}
+              dataKey={dataKey}
+              stroke={chartColor}
               strokeWidth={2}
               dot={false}
               activeDot={{ 
                 r: 4, 
-                stroke: color, 
+                stroke: chartColor, 
                 strokeWidth: 2, 
-                fill: color,
+                fill: chartColor,
                 className: "animate-pulse"
               }}
             />
@@ -107,8 +113,8 @@ export default function CustomLineChart({
       <div className="mt-4 text-center">
         <div className="text-white/60 text-sm">Current value</div>
         <div className="text-2xl font-bold text-white">
-          {data.length > 0 ? formatValue(data[data.length - 1][metric]) : '...'} 
-          {metric === 'gasPrice' ? ' Gwei' : ' TPS'}
+          {data.length > 0 ? formatValue(data[data.length - 1][dataKey]) : '...'} 
+          {dataKey === 'gasPrice' ? ' Gwei' : ' TPS'}
         </div>
       </div>
     </motion.div>

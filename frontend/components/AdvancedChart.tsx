@@ -42,7 +42,7 @@ interface ChartDataPoint {
 
 interface AdvancedChartProps {
   data: ChartDataPoint[]
-  title: string
+  title?: string
   type?: 'line' | 'area' | 'bar'
   metrics?: string[]
   showBrush?: boolean
@@ -106,7 +106,7 @@ const metricConfig = {
 
 export default function AdvancedChart({
   data,
-  title,
+  title = "Advanced Analytics",
   type = 'line',
   metrics = ['tps'],
   showBrush = false,
@@ -337,7 +337,7 @@ export default function AdvancedChart({
     <div className="space-y-4">
       {/* Chart Header with Controls */}
       <div className="flex items-center justify-between">
-        <h3 className="text-white font-semibold">{title}</h3>
+        <h3 className="text-white font-semibold">{title || 'Advanced Chart'}</h3>
         
         <div className="flex items-center space-x-4">
           {/* Time Range Selector */}

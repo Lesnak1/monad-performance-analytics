@@ -312,11 +312,19 @@ export async function getChainInfo() {
   }
 }
 
-// Explorer URLs
-export function getExplorerUrl(type: 'tx' | 'block' | 'address', hash: string): string {
+// Explorer URLs - Overloaded for backward compatibility
+export function getExplorerUrl(hash: string): string
+export function getExplorerUrl(type: 'tx' | 'block' | 'address', hash: string): string
+export function getExplorerUrl(typeOrHash: string | 'tx' | 'block' | 'address', hash?: string): string {
   const baseUrl = 'https://monad-testnet.socialscan.io'
   
-  switch (type) {
+  // If only one parameter is provided, assume it's a transaction hash
+  if (hash === undefined) {
+    return `${baseUrl}/tx/${typeOrHash}`
+  }
+  
+  // If two parameters are provided, use the type
+  switch (typeOrHash) {
     case 'tx':
       return `${baseUrl}/tx/${hash}`
     case 'block':

@@ -115,7 +115,7 @@ export default function LiveTransactions({ isPlaying = true, onToggle }: LiveTra
           })
           .catch(console.error)
       }
-    }, 2000) // Fetch every 2 seconds for real-time feel
+    }, 3000) // Reduced frequency to 3 seconds
 
     return () => clearInterval(interval)
   }, [isRunning])
@@ -162,21 +162,21 @@ export default function LiveTransactions({ isPlaying = true, onToggle }: LiveTra
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="glass rounded-2xl p-6 space-y-6"
+      className="space-y-4 sm:space-y-6"
     >
-      {/* Header with Stats */}
+      {/* Header with Stats - Responsive */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-2xl font-bold text-white text-glow">Live Transaction Feed</h3>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h3 className="text-lg sm:text-xl font-bold text-white">Live Transaction Feed</h3>
           
-          <div className="flex items-center space-x-3">
-            {/* Filter */}
+          <div className="flex items-center justify-between sm:justify-end space-x-3">
+            {/* Filter - Responsive */}
             <div className="flex items-center space-x-2 glass-subtle rounded-lg p-2">
-              <Filter className="w-4 h-4 text-white/60" />
+              <Filter className="w-3 sm:w-4 h-3 sm:h-4 text-white/60" />
               <select 
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as any)}
-                className="bg-transparent text-white text-sm border-none outline-none"
+                className="bg-transparent text-white text-xs sm:text-sm border-none outline-none min-w-0"
               >
                 <option value="all">All</option>
                 <option value="transfer">Transfers</option>
@@ -197,120 +197,108 @@ export default function LiveTransactions({ isPlaying = true, onToggle }: LiveTra
                   : 'bg-white/10 text-white/60 hover:bg-white/20'
               }`}
             >
-              {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              {isRunning ? <Pause className="w-3 sm:w-4 h-3 sm:h-4" /> : <Play className="w-3 sm:w-4 h-3 sm:h-4" />}
             </motion.button>
           </div>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-5 gap-4">
-          <div className="glass-subtle rounded-lg p-3 text-center">
-            <div className="text-white/60 text-xs">Total TXs</div>
-            <div className="text-cyber-blue font-bold">{stats.totalTxs.toLocaleString()}</div>
+        {/* Stats Grid - Responsive */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <div className="glass-subtle rounded-lg p-3 sm:p-4 text-center">
+            <div className="text-lg sm:text-xl font-bold text-cyber-blue">{stats.totalTxs.toLocaleString()}</div>
+            <div className="text-xs text-white/60">Total Txs</div>
           </div>
-          <div className="glass-subtle rounded-lg p-3 text-center">
-            <div className="text-white/60 text-xs">24h Volume</div>
-            <div className="text-cyber-green font-bold">{(stats.txsLast24h / 1000000).toFixed(1)}M</div>
+          <div className="glass-subtle rounded-lg p-3 sm:p-4 text-center">
+            <div className="text-lg sm:text-xl font-bold text-cyber-green">{stats.txsLast24h.toLocaleString()}</div>
+            <div className="text-xs text-white/60">24h Volume</div>
           </div>
-          <div className="glass-subtle rounded-lg p-3 text-center">
-            <div className="text-white/60 text-xs">Avg Gas</div>
-            <div className="text-cyber-purple font-bold">{stats.avgGasPrice.toFixed(1)} Gwei</div>
+          <div className="glass-subtle rounded-lg p-3 sm:p-4 text-center">
+            <div className="text-lg sm:text-xl font-bold text-cyber-purple">{stats.avgGasPrice.toFixed(1)}</div>
+            <div className="text-xs text-white/60">Avg Gas</div>
           </div>
-          <div className="glass-subtle rounded-lg p-3 text-center">
-            <div className="text-white/60 text-xs">Success Rate</div>
-            <div className="text-cyber-yellow font-bold">{stats.successRate.toFixed(1)}%</div>
-          </div>
-          <div className="glass-subtle rounded-lg p-3 text-center">
-            <div className="text-white/60 text-xs">Live Count</div>
-            <div className="text-white font-bold">{filteredTransactions.length}</div>
+          <div className="glass-subtle rounded-lg p-3 sm:p-4 text-center">
+            <div className="text-lg sm:text-xl font-bold text-cyber-yellow">{stats.successRate}%</div>
+            <div className="text-xs text-white/60">Success</div>
           </div>
         </div>
       </div>
 
-      {/* Transaction Feed */}
-      <div className="space-y-2 max-h-96 overflow-y-auto custom-scrollbar">
-        <AnimatePresence mode="popLayout">
-          {filteredTransactions.map((tx, index) => (
-            <motion.div
-              key={tx.id}
-              initial={{ opacity: 0, x: -20, scale: 0.95 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 20, scale: 0.95 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
-              className="glass-subtle rounded-lg p-4 hover:bg-white/10 transition-all group"
-            >
-              <div className="flex items-center justify-between">
-                {/* Left: TX Info */}
-                <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-lg bg-white/10 ${getTypeColor(tx.type)}`}>
-                    {getTypeIcon(tx.type)}
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-white/80 text-sm font-medium capitalize">
-                        {tx.type}
-                      </span>
-                      <div className={`w-2 h-2 rounded-full ${getStatusColor(tx.status)}`}></div>
+      {/* Transaction List - Responsive */}
+      <div className="space-y-2 max-h-96 overflow-y-auto scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/20">
+        <AnimatePresence>
+          {filteredTransactions.length > 0 ? (
+            filteredTransactions.map((tx, index) => (
+              <motion.div
+                key={tx.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+                className="glass-subtle rounded-lg p-3 sm:p-4 hover:bg-white/5 transition-colors group"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  {/* Left: Type & Status */}
+                  <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                    <div className={`p-2 rounded-lg bg-white/10 ${getTypeColor(tx.type)}`}>
+                      {getTypeIcon(tx.type)}
                     </div>
                     
-                    <div className="flex items-center space-x-2 text-xs text-white/60">
-                      <span>{tx.from.substring(0, 8)}...{tx.from.substring(tx.from.length - 4)}</span>
-                      <ArrowUpRight className="w-3 h-3" />
-                      <span>{tx.to.substring(0, 8)}...{tx.to.substring(tx.to.length - 4)}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-white text-sm font-medium capitalize">{tx.type}</span>
+                        <div className={`w-2 h-2 rounded-full ${getStatusColor(tx.status)}`}></div>
+                      </div>
+                      
+                      {/* Addresses - Responsive */}
+                      <div className="flex items-center space-x-1 text-xs text-white/60 mt-1">
+                        <span className="truncate max-w-20 sm:max-w-24">{tx.from}</span>
+                        <ArrowUpRight className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate max-w-20 sm:max-w-24">{tx.to}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Center: Amount */}
-                <div className="text-right">
-                  <div className="text-white font-medium">{tx.amount}</div>
-                  <div className="text-white/50 text-xs">{tx.gasUsed.toLocaleString()} gas</div>
-                </div>
-
-                {/* Right: Actions */}
-                <div className="flex items-center space-x-2">
-                  <div className="text-right text-xs">
-                    <div className="text-white/60">#{tx.blockNumber}</div>
-                    <div className="text-white/40">
-                      {new Date(tx.timestamp).toLocaleTimeString()}
+                  {/* Right: Amount & Details */}
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-sm font-mono text-cyber-green">{tx.amount}</div>
+                    <div className="text-xs text-white/60">
+                      {tx.gasPrice.toFixed(2)} Gwei
                     </div>
                   </div>
-                  
+
+                  {/* Explorer Link */}
                   <motion.a
-                    href={getExplorerUrl('tx', tx.id)}
+                    href={getExplorerUrl(tx.id)}
                     target="_blank"
                     rel="noopener noreferrer"
+                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors opacity-0 group-hover:opacity-100"
                     whileHover={{ scale: 1.1 }}
-                    className="p-1 rounded text-white/40 hover:text-cyber-blue opacity-0 group-hover:opacity-100 transition-all"
-                    title={`View on Explorer: ${tx.id}`}
+                    whileTap={{ scale: 0.9 }}
                   >
-                    <ExternalLink className="w-4 h-4" />
+                    <ExternalLink className="w-3 h-3 text-white/60" />
                   </motion.a>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            ))
+          ) : (
+            <div className="text-center py-8 text-white/40">
+              <Clock className="w-8 h-8 mx-auto mb-2" />
+              <p className="text-sm">Waiting for transactions...</p>
+              <p className="text-xs">Real-time data from Monad testnet</p>
+            </div>
+          )}
         </AnimatePresence>
       </div>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between pt-4 border-t border-white/10">
-        <div className="flex items-center space-x-2 text-sm text-white/60">
-          <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-cyber-green animate-pulse' : 'bg-white/30'}`}></div>
-          <span>{isRunning ? 'Live stream' : 'Stopped'}</span>
-          <span>•</span>
-          <span>Updated every 2 seconds</span>
+      {/* Footer Info - Responsive */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-4 border-t border-white/10">
+        <div className="flex items-center space-x-2 text-xs text-white/60">
+          <div className="w-2 h-2 bg-cyber-green rounded-full animate-pulse"></div>
+          <span>Live from Monad Testnet</span>
         </div>
-        
-        <motion.button
-          onClick={() => setTransactions([])}
-          whileHover={{ scale: 1.05 }}
-          className="text-white/60 hover:text-white text-sm flex items-center space-x-1"
-        >
-          <RefreshCw className="w-4 h-4" />
-          <span>Clear</span>
-        </motion.button>
+        <div className="text-xs text-white/40">
+          Showing {filteredTransactions.length} of {transactions.length} transactions
+        </div>
       </div>
     </motion.div>
   )

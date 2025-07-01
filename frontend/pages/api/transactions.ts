@@ -1,28 +1,33 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { ethers } from 'ethers'
 
-// Optimized RPC providers for Monad Testnet
+// Optimized RPC providers for Monad Testnet with better rotation
 const RPC_ENDPOINTS = [
-  'https://testnet-rpc.monad.xyz',           // Official - Most reliable
-  'https://monad-testnet.rpc.hypersync.xyz', // Envio HyperRPC
+  'https://monad-testnet.rpc.hypersync.xyz', // Envio - Most stable
   'https://10143.rpc.hypersync.xyz',         // Envio Alternative
+  'https://testnet-rpc.monad.xyz',           // Official - Use carefully
   'https://10143.rpc.thirdweb.com'           // Thirdweb
 ]
 
 let currentProviderIndex = 0
 let cachedTransactions: any[] = []
 let lastFetch = 0
-const CACHE_DURATION = 3000 // 3 seconds cache
+let lastProviderSwitch = 0
+const CACHE_DURATION = 5000 // 5 seconds cache to reduce load
+const PROVIDER_SWITCH_COOLDOWN = 8000 // 8 seconds between switches
+const CONNECTION_TIMEOUT = 3000 // Faster timeout
 
 async function getWorkingProvider(): Promise<ethers.JsonRpcProvider> {
-  for (let i = 0; i < RPC_ENDPOINTS.length; i++) {
+  const now = Date.now()
+  
+  for (let attempts = 0; attempts < RPC_ENDPOINTS.length; attempts++) {
     try {
       const endpoint = RPC_ENDPOINTS[currentProviderIndex]
       const provider = new ethers.JsonRpcProvider(endpoint, 10143)
       
-      // Test connection with timeout
+      // Quick connection test
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000)
+      const timeoutId = setTimeout(() => controller.abort(), CONNECTION_TIMEOUT)
       
       await Promise.race([
         provider.getBlockNumber(),
@@ -39,7 +44,15 @@ async function getWorkingProvider(): Promise<ethers.JsonRpcProvider> {
       
     } catch (error) {
       console.warn(`⚠️ Provider ${currentProviderIndex + 1} failed, switching...`)
-      currentProviderIndex = (currentProviderIndex + 1) % RPC_ENDPOINTS.length
+      
+      // Smart provider switching with cooldown
+      if (now - lastProviderSwitch > PROVIDER_SWITCH_COOLDOWN || attempts === 0) {
+        currentProviderIndex = (currentProviderIndex + 1) % RPC_ENDPOINTS.length
+        lastProviderSwitch = now
+      }
+      
+      // Brief delay to avoid overwhelming
+      await new Promise(resolve => setTimeout(resolve, 300))
     }
   }
   
@@ -80,10 +93,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const provider = await getWorkingProvider()
     const start = Date.now()
     
-    // Get current block number safely with retries
+    // Get current block number with better retry logic
     let currentBlockNumber = 0
     let attempts = 0
-    const maxAttempts = 3
+    const maxAttempts = 2 // Reduced attempts
     
     while (attempts < maxAttempts) {
       try {
@@ -96,7 +109,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           throw new Error(`Failed to get block number after ${maxAttempts} attempts`)
         }
         console.warn(`⚠️ Block number fetch attempt ${attempts} failed, retrying...`)
-        await new Promise(resolve => setTimeout(resolve, 500)) // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 400))
       }
     }
     
@@ -104,10 +117,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       throw new Error('Invalid current block number')
     }
     
-    // Add safety buffer to prevent race conditions
-    const safeBlockNumber = Math.max(1, currentBlockNumber - 2) // Go back 2 blocks for safety
+    // Use safer block number with larger buffer
+    const safeBlockNumber = Math.max(1, currentBlockNumber - 3) // Go back 3 blocks for safety
     
-    // Get latest safe block with transactions 
+    // Get latest safe block with transactions - sequential to avoid rate limits
     const latestBlock = await provider.getBlock(safeBlockNumber, true)
     
     if (!latestBlock) {
@@ -117,138 +130,122 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Initialize transactions array
     const transactions: any[] = []
     
-    // Safely get recent blocks for transaction data with validation
-    const blocksToFetch = Math.min(5, safeBlockNumber) // Don't go below block 0
-    const blockPromises: Promise<any>[] = []
+    // Reduce blocks to fetch for rate limit compliance
+    const blocksToFetch = Math.min(3, safeBlockNumber) // Only 3 blocks max
     
+    // Fetch blocks sequentially to avoid overwhelming the RPC
     for (let i = 0; i < blocksToFetch; i++) {
       const blockNumber = safeBlockNumber - i
-      if (blockNumber > 0 && blockNumber <= currentBlockNumber) { // Double check validity
-        blockPromises.push(
-          provider.getBlock(blockNumber, true).catch(error => {
-            console.warn(`⚠️ Failed to fetch block ${blockNumber}:`, error.message)
-            return null // Return null for failed blocks
-          })
-        )
-      }
-    }
-    
-    const blocks = await Promise.all(blockPromises)
-    
-    // Process transactions from successfully fetched blocks
-    for (const block of blocks) {
-      if (block && block.transactions && Array.isArray(block.transactions) && block.transactions.length > 0) {
-        
-        // Limit transactions per block for performance (max 5 per block)
-        const txLimit = Math.min(5, block.transactions.length)
-        
-        for (let j = 0; j < txLimit; j++) {
-          const txHash = block.transactions[j]
-          
-          try {
-            if (typeof txHash === 'string') {
-              // Get transaction details with retry logic
-              let tx = null
-              let txAttempts = 0
-              const maxTxAttempts = 2
-              
-              while (!tx && txAttempts < maxTxAttempts) {
-                try {
-                  tx = await provider.getTransaction(txHash)
-                  break
-                } catch (txError) {
-                  txAttempts++
-                  if (txAttempts >= maxTxAttempts) {
-                    console.warn(`⚠️ Failed to get tx ${txHash} after ${maxTxAttempts} attempts`)
-                    break
-                  }
-                  // Wait briefly before retry
-                  await new Promise(resolve => setTimeout(resolve, 100))
-                }
-              }
-              
-              if (tx && tx.hash) {
-                // Determine transaction type based on data and recipient
-                let txType = 'transfer'
-                if (tx.to === null) {
-                  txType = 'contract' // Contract creation
-                } else if (tx.data && tx.data !== '0x' && tx.data.length > 10) {
-                  // Check for common function signatures
-                  const methodId = tx.data.slice(0, 10)
-                  if (methodId === '0xa9059cbb' || methodId === '0x23b872dd') {
-                    txType = 'transfer' // ERC-20 transfer
-                  } else if (methodId === '0x40c10f19') {
-                    txType = 'mint'
-                  } else {
-                    txType = 'contract'
-                  }
-                }
-                
-                // Get transaction receipt for gas used (optional, with error handling)
-                let gasUsed = Number(tx.gasLimit) || 21000
-                try {
-                  const receipt = await provider.getTransactionReceipt(tx.hash)
-                  if (receipt && receipt.gasUsed) {
-                    gasUsed = Number(receipt.gasUsed)
-                  }
-                } catch (receiptError) {
-                  // Use gas limit as fallback
-                  console.warn(`⚠️ Failed to get receipt for ${tx.hash}, using gas limit`)
-                }
-                
-                transactions.push({
-                  hash: tx.hash,
-                  from: tx.from,
-                  to: tx.to || '0x0000000000000000000000000000000000000000',
-                  value: ethers.formatEther(tx.value || 0),
-                  gasPrice: ethers.formatUnits(tx.gasPrice || 0, 'gwei'),
-                  gasUsed,
-                  blockNumber: tx.blockNumber || block.number,
-                  timestamp: block.timestamp,
-                  type: txType,
-                  status: 'confirmed' // Assume confirmed since it's in a block
-                })
-              }
-            }
-          } catch (txError) {
-            console.warn(`⚠️ Failed to process transaction ${txHash}:`, txError.message)
-            continue // Skip failed transactions
+      if (blockNumber > 0 && blockNumber <= currentBlockNumber) {
+        try {
+          // Add delay between block requests
+          if (i > 0) {
+            await new Promise(resolve => setTimeout(resolve, 200))
           }
           
-          // Break if we have enough transactions
+          const block = await provider.getBlock(blockNumber, true)
+          
+          if (block && block.transactions && Array.isArray(block.transactions) && block.transactions.length > 0) {
+            // Limit transactions per block for performance (max 3 per block)
+            const txLimit = Math.min(3, block.transactions.length)
+            
+            for (let j = 0; j < txLimit; j++) {
+              const txHash = block.transactions[j]
+              
+              try {
+                if (typeof txHash === 'string') {
+                  // Get transaction details with single attempt to reduce load
+                  const tx = await provider.getTransaction(txHash)
+                  
+                  if (tx && tx.hash) {
+                    // Determine transaction type
+                    let txType = 'transfer'
+                    if (tx.to === null) {
+                      txType = 'contract'
+                    } else if (tx.data && tx.data !== '0x' && tx.data.length > 10) {
+                      const methodId = tx.data.slice(0, 10)
+                      if (methodId === '0xa9059cbb' || methodId === '0x23b872dd') {
+                        txType = 'transfer'
+                      } else if (methodId === '0x40c10f19') {
+                        txType = 'mint'
+                      } else {
+                        txType = 'contract'
+                      }
+                    }
+                    
+                    // Use gas limit as fallback - skip receipt fetch to reduce API calls
+                    let gasUsed = Number(tx.gasLimit) || 21000
+                    
+                    try {
+                      const receipt = await provider.getTransactionReceipt(tx.hash)
+                      if (receipt && receipt.gasUsed) {
+                        gasUsed = Number(receipt.gasUsed)
+                      }
+                    } catch (receiptError) {
+                      console.warn(`⚠️ Failed to get receipt for ${tx.hash}, using gas limit`)
+                    }
+                    
+                    transactions.push({
+                      hash: tx.hash,
+                      blockNumber: tx.blockNumber || blockNumber,
+                      from: tx.from || 'Unknown',
+                      to: tx.to || 'Contract Creation',
+                      value: tx.value ? ethers.formatEther(tx.value) : '0',
+                      gasPrice: tx.gasPrice ? ethers.formatUnits(tx.gasPrice, 'gwei') : '0',
+                      gasUsed: gasUsed.toString(),
+                      status: 'success', // Assume success if in block
+                      timestamp: block.timestamp,
+                      age: Math.floor((now / 1000) - block.timestamp),
+                      type: txType,
+                      fee: tx.gasPrice ? 
+                        (parseFloat(ethers.formatUnits(tx.gasPrice, 'gwei')) * gasUsed / 1e9).toFixed(6) : '0'
+                    })
+                    
+                    // Break early if we have enough transactions
+                    if (transactions.length >= 15) break
+                  }
+                }
+              } catch (txError) {
+                console.warn(`⚠️ Failed to get tx ${txHash}: ${txError.message}`)
+                continue
+              }
+            }
+          }
+          
+          // Break early if we have enough transactions
           if (transactions.length >= 15) break
+          
+        } catch (blockError) {
+          console.warn(`⚠️ Failed to fetch block ${blockNumber}: ${blockError.message}`)
+          continue
         }
       }
-      
-      if (transactions.length >= 15) break
     }
     
-    const responseTime = Date.now() - start
+    // Sort by block number (newest first)
+    transactions.sort((a, b) => (b.blockNumber || 0) - (a.blockNumber || 0))
     
     // Cache the results
-    cachedTransactions = transactions
+    cachedTransactions = transactions.slice(0, 15) // Limit to 15 transactions
     lastFetch = now
     
-    console.log(`✅ Fetched ${transactions.length} real transactions in ${responseTime}ms`)
+    const fetchTime = Date.now() - start
+    console.log(`✅ Fetched ${transactions.length} real transactions in ${fetchTime}ms`)
     
     res.status(200).json({
       success: true,
-      data: transactions,
-      blockNumber: currentBlockNumber,
-      safeBlockNumber,
-      totalTransactions: latestBlock.transactions?.length || 0,
-      responseTime: `${responseTime}ms`,
-      timestamp: new Date().toISOString(),
-      provider: RPC_ENDPOINTS[currentProviderIndex],
-      cached: false
+      data: cachedTransactions,
+      count: cachedTransactions.length,
+      fetchTime,
+      cached: false,
+      timestamp: new Date().toISOString()
     })
     
   } catch (error) {
     console.error('❌ Error fetching transactions:', error)
     
-    // Return cached data if available on error
+    // Return cached data if available
     if (cachedTransactions.length > 0) {
-      console.log('📦 Returning cached transactions due to fetch error')
       return res.status(200).json({
         success: true,
         data: cachedTransactions,
@@ -260,9 +257,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString(),
-      data: [] // Return empty array instead of null
+      error: 'Failed to fetch transactions',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
     })
   }
 } 
