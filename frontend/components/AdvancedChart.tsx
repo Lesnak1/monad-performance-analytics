@@ -25,8 +25,11 @@ import {
   Zap,
   DollarSign,
   Clock,
-  Wifi
+  Wifi,
+  Users,
+  Database
 } from 'lucide-react'
+import { safeToLocaleString } from '../lib/utils'
 
 interface ChartDataPoint {
   timestamp: string
@@ -406,7 +409,7 @@ export default function AdvancedChart({
                 </span>
               </div>
               <div className="text-white font-semibold">
-                {(stat.current || 0).toLocaleString()} {config.unit}
+                {safeToLocaleString(stat.current || 0)} {config.unit}
               </div>
               <div className="text-white/60 text-xs">
                 {config.label}

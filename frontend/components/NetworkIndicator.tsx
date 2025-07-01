@@ -104,7 +104,7 @@ export default function NetworkIndicator({ networkStatus, currentRpcIndex = 0 }:
           </div>
         </div>
         <div className="text-white/60 text-xs">
-          Block #{(networkStatus.blockNumber || 0).toLocaleString()}
+          Block #{formatBlockNumber(networkStatus.blockNumber)}
         </div>
       </div>
 
@@ -139,7 +139,7 @@ export default function NetworkIndicator({ networkStatus, currentRpcIndex = 0 }:
           </div>
           <div className="flex justify-between">
             <span className="text-white/60">Latest Block:</span>
-            <span className="text-white font-mono">#{(networkStatus.blockNumber || 0).toLocaleString()}</span>
+            <span className="text-white font-mono">#{formatBlockNumber(networkStatus.blockNumber)}</span>
           </div>
           
           {/* RPC URL (shortened) */}

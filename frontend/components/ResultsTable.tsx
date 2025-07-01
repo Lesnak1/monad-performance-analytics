@@ -1,8 +1,9 @@
 'use client'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { ExternalLink, Download, Eye, Clock, Zap, TrendingUp, Info } from 'lucide-react'
 import { getExplorerUrl } from '../lib/monadData'
 import { useState } from 'react'
+import { safeToLocaleString, formatGasPrice, formatBlockNumber } from '../lib/utils'
 
 interface TestResult {
   id: string
@@ -151,25 +152,25 @@ export default function ResultsTable({ results, loading = false }: ResultsTableP
                   <td className="p-4">
                     <div className="flex items-center space-x-2">
                       <Zap className="w-4 h-4 text-cyber-green" />
-                      <span className="font-bold text-cyber-green">{result.tps.toLocaleString()}</span>
+                      <span className="font-bold text-cyber-green">{safeToLocaleString(result.tps)}</span>
                     </div>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center space-x-2">
                       <Clock className="w-4 h-4 text-cyber-blue" />
-                      <span className="text-cyber-blue">{result.duration}s</span>
+                      <span className="text-cyber-blue">{safeToLocaleString(result.duration)}s</span>
                     </div>
                   </td>
                   <td className="p-4">
                     <span className="text-purple-400 font-medium">
-                      {result.gasUsed.toLocaleString()}
+                      {safeToLocaleString(result.gasUsed)}
                     </span>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center space-x-2">
                       <TrendingUp className="w-4 h-4 text-pink-400" />
                       <span className="text-pink-400 font-medium">
-                        {result.successRate.toFixed(1)}%
+                        {safeToLocaleString(result.successRate)}%
                       </span>
                     </div>
                   </td>
@@ -179,7 +180,7 @@ export default function ResultsTable({ results, loading = false }: ResultsTableP
                       className="text-cyber-blue hover:text-white transition-colors"
                       title="View block on explorer"
                     >
-                      #{result.blockNumber.toLocaleString()}
+                      {formatBlockNumber(result.blockNumber)}
                     </button>
                   </td>
                   <td className="p-4">
@@ -261,25 +262,25 @@ export default function ResultsTable({ results, loading = false }: ResultsTableP
                 <div className="bg-cyber-green/10 rounded-lg p-4">
                   <div className="text-white/60 text-sm">TPS Achieved</div>
                   <div className="text-cyber-green font-bold text-xl">
-                    {selectedResult.tps.toLocaleString()}
+                    {safeToLocaleString(selectedResult.tps)}
                   </div>
                 </div>
                 <div className="bg-cyber-blue/10 rounded-lg p-4">
                   <div className="text-white/60 text-sm">Duration</div>
                   <div className="text-cyber-blue font-bold text-xl">
-                    {selectedResult.duration}s
+                    {safeToLocaleString(selectedResult.duration)}s
                   </div>
                 </div>
                 <div className="bg-purple-500/10 rounded-lg p-4">
                   <div className="text-white/60 text-sm">Gas Used</div>
                   <div className="text-purple-400 font-bold">
-                    {selectedResult.gasUsed.toLocaleString()}
+                    {safeToLocaleString(selectedResult.gasUsed)}
                   </div>
                 </div>
                 <div className="bg-pink-500/10 rounded-lg p-4">
                   <div className="text-white/60 text-sm">Success Rate</div>
                   <div className="text-pink-400 font-bold">
-                    {selectedResult.successRate.toFixed(1)}%
+                    {safeToLocaleString(selectedResult.successRate)}%
                   </div>
                 </div>
               </div>

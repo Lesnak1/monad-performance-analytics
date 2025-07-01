@@ -227,19 +227,19 @@ export default function LiveTransactions({ isPlaying = true, onToggle }: LiveTra
         {/* Stats Grid - Responsive */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <div className="glass-subtle rounded-lg p-3 sm:p-4 text-center">
-            <div className="text-lg sm:text-xl font-bold text-cyber-blue">{(safeToLocaleString(stats.totalTxs) || 0)}</div>
+            <div className="text-lg sm:text-xl font-bold text-cyber-blue">{safeToLocaleString(stats.totalTxs)}</div>
             <div className="text-xs text-white/60">Total Txs</div>
           </div>
           <div className="glass-subtle rounded-lg p-3 sm:p-4 text-center">
-            <div className="text-lg sm:text-xl font-bold text-cyber-green">{(safeToLocaleString(stats.txsLast24h) || 0)}</div>
+            <div className="text-lg sm:text-xl font-bold text-cyber-green">{safeToLocaleString(stats.txsLast24h)}</div>
             <div className="text-xs text-white/60">24h Volume</div>
           </div>
           <div className="glass-subtle rounded-lg p-3 sm:p-4 text-center">
-            <div className="text-lg sm:text-xl font-bold text-cyber-purple">{(formatGasPrice(stats.avgGasPrice) || 0)}</div>
+            <div className="text-lg sm:text-xl font-bold text-cyber-purple">{formatGasPrice(stats.avgGasPrice)}</div>
             <div className="text-xs text-white/60">Avg Gas</div>
           </div>
           <div className="glass-subtle rounded-lg p-3 sm:p-4 text-center">
-            <div className="text-lg sm:text-xl font-bold text-cyber-yellow">{safeToLocaleString(stats.successRate) + '%'}</div>
+            <div className="text-lg sm:text-xl font-bold text-cyber-yellow">{safeToLocaleString(stats.successRate)}%</div>
             <div className="text-xs text-white/60">Success</div>
           </div>
         </div>
@@ -284,7 +284,7 @@ export default function LiveTransactions({ isPlaying = true, onToggle }: LiveTra
                   <div className="text-right flex-shrink-0">
                     <div className="text-sm font-mono text-cyber-green">{tx.amount}</div>
                     <div className="text-xs text-white/60">
-                      {formatGasPrice(tx.gasPrice) + ' Gwei'}
+                      {formatGasPrice(tx.gasPrice)} Gwei
                     </div>
                   </div>
 
