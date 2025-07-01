@@ -406,7 +406,7 @@ export default function AdvancedChart({
                 </span>
               </div>
               <div className="text-white font-semibold">
-                {stat.current.toLocaleString()} {config.unit}
+                {(stat.current || 0).toLocaleString()} {config.unit}
               </div>
               <div className="text-white/60 text-xs">
                 {config.label}
