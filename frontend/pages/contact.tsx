@@ -152,7 +152,7 @@ export default function Contact() {
                   <p className="text-white/70 mb-6">{method.description}</p>
                   <div className="space-y-3">
                     <div className="text-white/60 font-mono text-sm">{method.contact}</div>
-                    <button className={`w-full px-4 py-2 ${method.color.replace('text-', 'bg-').replace('400', '500')} hover:${method.color.replace('text-', 'bg-').replace('400', '600')} text-white rounded-lg transition-colors font-medium`}>
+                    <button className={`w-full px-4 py-2 ${method.color ? method.color.replace('text-', 'bg-').replace('400', '500') : 'bg-blue-500'} hover:${method.color ? method.color.replace('text-', 'bg-').replace('400', '600') : 'bg-blue-600'} text-white rounded-lg transition-colors font-medium`}>
                       {method.action}
                     </button>
                   </div>

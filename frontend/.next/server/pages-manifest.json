@@ -1,1 +1,9 @@
-{"/_app":"pages/_app.js","/_error":"pages/_error.js","/about":"pages/about.html","/api/network-status":"pages/api/network-status.js","/api/transactions":"pages/api/transactions.js","/api/metrics":"pages/api/metrics.js","/benchmarks":"pages/benchmarks.html","/api/monad-metrics":"pages/api/monad-metrics.js","/cookies":"pages/cookies.html","/contact":"pages/contact.html","/faq":"pages/faq.html","/":"pages/index.html","/privacy":"pages/privacy.html","/terms":"pages/terms.html","/security":"pages/security.html","/api/benchmark":"pages/api/benchmark.js","/_document":"pages/_document.js","/404":"pages/404.html"}
+{
+  "/_app": "pages/_app.js",
+  "/_error": "pages/_error.js",
+  "/_document": "pages/_document.js",
+  "/": "pages/index.js",
+  "/api/monad-metrics": "pages/api/monad-metrics.js",
+  "/api/network-status": "pages/api/network-status.js",
+  "/api/transactions": "pages/api/transactions.js"
+}

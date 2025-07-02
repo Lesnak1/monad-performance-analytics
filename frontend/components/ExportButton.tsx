@@ -154,7 +154,7 @@ export default function ExportButton({
             <div className="mt-3 pt-3 border-t border-white/10">
               <div className="text-xs text-white/60 space-y-1">
                 <div>📊 {data.length} data points</div>
-                <div>📅 {filename.replace(/_/g, ' ')}</div>
+                <div>📅 {filename ? filename.replace(/_/g, ' ') : 'monad data'}</div>
               </div>
             </div>
           </motion.div>

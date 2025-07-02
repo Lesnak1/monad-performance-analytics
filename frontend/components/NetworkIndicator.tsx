@@ -146,7 +146,10 @@ export default function NetworkIndicator({ networkStatus, currentRpcIndex = 0 }:
           <div className="pt-2 border-t border-white/10">
             <span className="text-white/60 text-xs">RPC Endpoint:</span>
             <div className="text-white/80 text-xs font-mono break-all">
-              {networkStatus.rpcUrl.replace('https://', '').substring(0, 30)}...
+              {networkStatus.rpcUrl ? 
+                `${networkStatus.rpcUrl.replace('https://', '').substring(0, 30)}...` :
+                'Not connected'
+              }
             </div>
           </div>
 
