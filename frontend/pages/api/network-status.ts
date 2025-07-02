@@ -1,9 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { ethers } from 'ethers'
 
-// Optimized RPC configuration matching metrics API
+// Real Monad Testnet configuration - using actual testnet data
 const MONAD_TESTNET_CONFIG = {
-  chainId: 10143,
+  chainId: 10143, // Real Monad Testnet Chain ID
   chainName: 'Monad Testnet',
   nativeToken: 'MON',
   rpcEndpoints: [
@@ -33,7 +33,7 @@ async function getNetworkStatus() {
   }
 
   try {
-    console.log('🔄 Fetching real Monad testnet data...')
+    console.log('🔄 Fetching real Monad testnet status...')
     
     for (let i = 0; i < MONAD_TESTNET_CONFIG.rpcEndpoints.length; i++) {
       try {
@@ -41,9 +41,9 @@ async function getNetworkStatus() {
         const provider = new ethers.JsonRpcProvider(endpoint, MONAD_TESTNET_CONFIG.chainId)
         
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 4000) // Shorter timeout
+        const timeoutId = setTimeout(() => controller.abort(), 4000)
         
-        // Single request instead of batch to avoid DRPC limit
+        // Single request to get block number from real testnet
         const blockNumber = await Promise.race([
           provider.getBlockNumber(),
           new Promise((_, reject) => {
@@ -55,7 +55,7 @@ async function getNetworkStatus() {
         
         clearTimeout(timeoutId)
         
-        // Get gas price in separate request to avoid batch limit
+        // Get real gas price from network
         let gasPrice = 0
         try {
           const feeData = await provider.getFeeData()
@@ -88,11 +88,11 @@ async function getNetworkStatus() {
         cachedStatus = statusData
         lastStatusFetch = now
         
-        console.log(`✅ Connected to ${endpoint}`)
+        console.log(`✅ Real testnet connected: Block ${blockNumber} via ${endpoint}`)
         return statusData
         
       } catch (error) {
-        console.warn(`⚠️ RPC ${currentProviderIndex + 1} (${MONAD_TESTNET_CONFIG.rpcEndpoints[currentProviderIndex]}) failed:`, error.message)
+        console.warn(`⚠️ RPC ${currentProviderIndex + 1} failed:`, error.message)
         currentProviderIndex = (currentProviderIndex + 1) % MONAD_TESTNET_CONFIG.rpcEndpoints.length
         continue
       }

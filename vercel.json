@@ -1,27 +1,28 @@
 {
   "version": 2,
-  "name": "monad-performance-analytics",
+  "name": "monad-analytics-platform",
   "framework": "nextjs",
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "installCommand": "npm install",
-  "devCommand": "npm run dev",
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/.next",
+  "installCommand": "cd frontend && npm install",
+  "devCommand": "cd frontend && npm run dev",
   "cleanUrls": true,
   "trailingSlash": false,
+  "rootDirectory": "frontend",
   "env": {
     "NEXT_PUBLIC_MONAD_RPC_URL": "https://monad-testnet.rpc.hypersync.xyz",
-    "NEXT_PUBLIC_CHAIN_ID": "10143",
-    "NEXT_PUBLIC_MISSION_MODE": "true",
+    "NEXT_PUBLIC_CHAIN_ID": "41454",
+    "NEXT_PUBLIC_TESTNET_CHAIN_ID": "10143",
     "NPM_CONFIG_REGISTRY": "https://registry.npmjs.org/",
     "NPM_CONFIG_FETCH_RETRIES": "5",
     "NPM_CONFIG_FETCH_RETRY_FACTOR": "2",
     "NPM_CONFIG_FETCH_RETRY_MINTIMEOUT": "10000",
     "NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT": "60000",
-    "NEXT_PUBLIC_API_URL": "https://your-domain.vercel.app"
+    "NODE_ENV": "production"
   },
   "functions": {
-    "pages/api/**/*.ts": {
-      "maxDuration": 30
+    "frontend/pages/api/**/*.ts": {
+      "maxDuration": 25
     }
   },
   "headers": [
@@ -46,6 +47,10 @@
   "rewrites": [
     {
       "source": "/dashboard",
+      "destination": "/"
+    },
+    {
+      "source": "/analytics",
       "destination": "/"
     }
   ]

@@ -16,8 +16,8 @@ function getApiBaseUrl(): string {
     return 'http://localhost:3000'
   }
   
-  // Production fallback
-  return 'https://monad-analytics.vercel.app'
+  // Production fallback - use actual Vercel deployment URL
+  return 'https://monad-analytics-platform.vercel.app'
 }
 
 // Types
@@ -202,10 +202,10 @@ export async function getChartData(): Promise<ChartDataPoint[]> {
           minute: '2-digit' 
         }),
         tps: Math.max(0, Math.round(metrics.tps + tpsVariance)),
-        gasPrice: Math.max(0, parseFloat((metrics.gasPrice + gasPriceVariance).toFixed(4))),
-        blockTime: metrics.blockTime + (0.1 * (Math.random() - 0.5)), // Small variance in block time
-        networkHealth: Math.min(100, Math.max(90, metrics.networkHealth + healthVariance)),
-        blockNumber: Math.max(0, metrics.blockNumber - i * 2) // More realistic block progression
+        gasPrice: Math.max(0, parseFloat((metrics.gasPrice + gasPriceVariance).toFixed(3))),
+        blockTime: metrics.blockTime + (Math.random() - 0.5) * 0.2,
+        networkHealth: Math.max(50, Math.min(100, Math.round(metrics.networkHealth + healthVariance))),
+        blockNumber: metrics.blockNumber - i
       })
     }
     
@@ -218,112 +218,93 @@ export async function getChartData(): Promise<ChartDataPoint[]> {
   }
 }
 
-// Generate fallback chart data when real data is unavailable
 function generateFallbackChartData(): ChartDataPoint[] {
   const fallbackData: ChartDataPoint[] = []
   
   for (let i = 23; i >= 0; i--) {
     const timestamp = new Date(Date.now() - (i * 2.5 * 60 * 1000))
+    
     fallbackData.push({
       timestamp: timestamp.toLocaleTimeString('en-US', { 
         hour12: false, 
         hour: '2-digit', 
         minute: '2-digit' 
       }),
-      tps: Math.floor(Math.random() * 50) + 20,
-      gasPrice: parseFloat((Math.random() * 0.01 + 0.001).toFixed(4)),
-      blockTime: 0.6 + (Math.random() * 0.2 - 0.1),
-      networkHealth: Math.floor(Math.random() * 10) + 90,
-      blockNumber: 24000000 + i * 2
+      tps: Math.round(45 + Math.random() * 85),
+      gasPrice: parseFloat((0.1 + Math.random() * 0.5).toFixed(3)),
+      blockTime: 0.6 + Math.random() * 0.4,
+      networkHealth: Math.round(90 + Math.random() * 10),
+      blockNumber: 5000000 - i
     })
   }
   
   return fallbackData
 }
 
-// Generate live transactions for display with more realistic data
 export function generateLiveTransaction(): Transaction {
-  const types: Transaction['type'][] = ['transfer', 'contract', 'mint', 'swap']
-  const statuses: Transaction['status'][] = ['pending', 'confirmed', 'failed']
-  
+  const types = ['transfer', 'contract', 'mint', 'swap'] as const
   const addresses = [
-    '0x742d35Cc6634C0532925a3b8D400b7C1234567890',
-    '0x8ba1f109551bD432803012645Hac136c22c501234',
-    '0x3f5CE5FBFe3E9af3971dd833D26bA9b5C936f123',
-    '0x95A4949f09415ffccB8F0F33A5a4e2A4c9B367890',
-    '0x742d35Cc663C0532925a3b8D400b7C16F484c789'
+    '0x742d35Cc7E99E8d2Ba04D1d0700cc52FdbEbF9c1',
+    '0x8ba1f109551bD432803012645Hac136c770e776D',
+    '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+    '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984'
   ]
-  
-  const fromAddress = addresses[Math.floor(Math.random() * addresses.length)]
-  const toAddress = addresses[Math.floor(Math.random() * addresses.length)]
   
   return {
     id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     type: types[Math.floor(Math.random() * types.length)],
-    from: fromAddress,
-    to: toAddress,
-    amount: (Math.random() * 10 + 0.01).toFixed(4),
-    status: statuses[Math.floor(Math.random() * statuses.length)],
+    from: addresses[Math.floor(Math.random() * addresses.length)],
+    to: addresses[Math.floor(Math.random() * addresses.length)],
+    amount: (Math.random() * 1000).toFixed(4),
+    status: Math.random() > 0.1 ? 'confirmed' : 'pending',
     timestamp: Date.now(),
-    gasUsed: Math.floor(Math.random() * 50000) + 21000,
-    gasPrice: parseFloat((Math.random() * 0.01 + 0.001).toFixed(6)),
-    blockNumber: 24070000 + Math.floor(Math.random() * 1000)
+    gasUsed: Math.floor(21000 + Math.random() * 80000),
+    gasPrice: Math.round((0.1 + Math.random() * 0.5) * 1000) / 1000,
+    blockNumber: Math.floor(5000000 + Math.random() * 1000)
   }
 }
 
-// RPC Management (simplified for client-side use)
 export function getCurrentRpcIndex(): number {
-  return 0 // Always use the first working RPC
+  return 0 // Default to first RPC
 }
 
 export function tryNextRpc(): void {
-  // This is handled server-side in the API routes
-  console.log('RPC switching handled by server-side API')
+  console.log('🔄 Trying next RPC endpoint...')
 }
 
 export function getAllRpcUrls(): string[] {
   return [
-    'https://testnet-rpc.monad.xyz',
     'https://monad-testnet.rpc.hypersync.xyz',
     'https://10143.rpc.hypersync.xyz',
-    'https://10143.rpc.thirdweb.com'
+    'https://testnet-rpc.monad.xyz',
+    'https://10143.rpc.thirdweb.com',
+    'https://monad-testnet.drpc.org'
   ]
 }
 
-// Simplified validator info for display
 export async function getValidators() {
-  return {
-    active: 150,
-    total: 200,
-    stakingRatio: 75.5,
-    averageUptime: 99.2
-  }
+  // Mock validator data for display
+  return []
 }
 
-// Chain info
 export async function getChainInfo() {
   return {
     chainId: 10143,
     chainName: 'Monad Testnet',
-    nativeToken: 'MON',
-    blockTime: 0.6,
-    finalityTime: 2.4,
-    consensusAlgorithm: 'MonadBFT'
+    nativeToken: 'MON'
   }
 }
 
-// Explorer URLs - Overloaded for backward compatibility
-export function getExplorerUrl(hash: string): string
 export function getExplorerUrl(type: 'tx' | 'block' | 'address', hash: string): string
+export function getExplorerUrl(hash: string): string
 export function getExplorerUrl(typeOrHash: string | 'tx' | 'block' | 'address', hash?: string): string {
   const baseUrl = 'https://monad-testnet.socialscan.io'
   
-  // If only one parameter is provided, assume it's a transaction hash
   if (hash === undefined) {
+    // Single parameter, assume it's a transaction hash
     return `${baseUrl}/tx/${typeOrHash}`
   }
   
-  // If two parameters are provided, use the type
   switch (typeOrHash) {
     case 'tx':
       return `${baseUrl}/tx/${hash}`
@@ -332,11 +313,10 @@ export function getExplorerUrl(typeOrHash: string | 'tx' | 'block' | 'address', 
     case 'address':
       return `${baseUrl}/address/${hash}`
     default:
-      return baseUrl
+      return `${baseUrl}/tx/${hash}`
   }
 }
 
-// Get recent transactions from API
 export async function getRecentTransactions(): Promise<Transaction[]> {
   try {
     const apiBaseUrl = getApiBaseUrl()
@@ -365,18 +345,18 @@ export async function getRecentTransactions(): Promise<Transaction[]> {
         to: tx.to,
         amount: tx.value,
         status: tx.status || 'confirmed',
-        timestamp: tx.timestamp * 1000, // Convert to milliseconds
-        gasUsed: tx.gasUsed || 21000,
-        gasPrice: parseFloat(tx.gasPrice || '0'),
+        timestamp: tx.timestamp * 1000,
+        gasUsed: parseInt(tx.gasUsed),
+        gasPrice: parseFloat(tx.gasPrice),
         blockNumber: tx.blockNumber
       }))
     }
     
-    // Return empty array if no data
-    return []
+    // Fallback: generate some sample transactions
+    return Array.from({ length: 5 }, () => generateLiveTransaction())
     
   } catch (error) {
     console.error('❌ Failed to fetch recent transactions:', error)
-    return []
+    return Array.from({ length: 5 }, () => generateLiveTransaction())
   }
 } 
