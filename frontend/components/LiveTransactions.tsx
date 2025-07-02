@@ -254,10 +254,10 @@ export default function LiveTransactions({ isPlaying = true, onToggle }: LiveTra
                     
                     <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0">
                       <div className="text-xs text-white/60 truncate">
-                        From: {tx.from.slice(0, 6)}...{tx.from.slice(-4)}
+                        From: {tx.from ? `${tx.from.slice(0, 6)}...${tx.from.slice(-4)}` : 'Unknown'}
                       </div>
                       <div className="text-xs text-white/60 truncate">
-                        To: {tx.to.slice(0, 6)}...{tx.to.slice(-4)}
+                        To: {tx.to ? `${tx.to.slice(0, 6)}...${tx.to.slice(-4)}` : 'Unknown'}
                       </div>
                     </div>
                   </div>
