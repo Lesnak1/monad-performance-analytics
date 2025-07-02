@@ -177,6 +177,8 @@ export default function AdvancedFilters({ onFiltersChange, totalResults, isLoadi
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
             <input
               type="text"
+              id="search-transactions"
+              name="searchTransactions"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by hash, address, token..."
@@ -300,6 +302,8 @@ export default function AdvancedFilters({ onFiltersChange, totalResults, isLoadi
                 <div className="grid grid-cols-2 gap-4">
                   <input
                     type="datetime-local"
+                    id="time-range-start"
+                    name="timeRangeStart"
                     value={filters.timeRange.start}
                     onChange={(e) => updateFilter('timeRange', {
                       ...filters.timeRange,
@@ -358,6 +362,8 @@ export default function AdvancedFilters({ onFiltersChange, totalResults, isLoadi
                   <div className="flex items-center space-x-4">
                     <input
                       type="number"
+                      id="gas-range-min"
+                      name="gasRangeMin"
                       value={filters.gasRange.min}
                       onChange={(e) => updateFilter('gasRange', {
                         ...filters.gasRange,
@@ -369,6 +375,8 @@ export default function AdvancedFilters({ onFiltersChange, totalResults, isLoadi
                     <span className="text-white/40">to</span>
                     <input
                       type="number"
+                      id="gas-range-max"
+                      name="gasRangeMax"
                       value={filters.gasRange.max}
                       onChange={(e) => updateFilter('gasRange', {
                         ...filters.gasRange,
