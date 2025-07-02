@@ -17,7 +17,7 @@ function getApiBaseUrl(): string {
   }
   
   // Production fallback - use actual Vercel deployment URL
-  return 'https://monad-analytics-platform.vercel.app'
+  return 'https://monad-performance-analytics.vercel.app'
 }
 
 // Types
