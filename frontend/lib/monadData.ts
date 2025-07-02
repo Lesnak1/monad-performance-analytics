@@ -1,24 +1,15 @@
 import { ethers } from 'ethers'
 
-// Properly handle API base URL for both client and server environments
-function getApiBaseUrl(): string {
-  // Client-side
-  if (typeof window !== 'undefined') {
-    return window.location.origin
-  }
-  
-  // Server-side - build absolute URL
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`
-  }
-  
-  if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:3000'
-  }
-  
-  // Production fallback - use actual Vercel deployment URL
-  return 'https://monad-performance-analytics.vercel.app'
-}
+// .env.local dosyasından endpointleri al
+const MONAD_RPC_ENDPOINTS = process.env.NEXT_PUBLIC_MONAD_RPC_ENDPOINTS?.split(',') || [
+  'https://monad-testnet.rpc.hypersync.xyz',
+  'https://10143.rpc.hypersync.xyz',
+  'https://testnet-rpc.monad.xyz',
+  'https://10143.rpc.thirdweb.com',
+  'https://monad-testnet.drpc.org'
+]
+const CHAIN_ID = 10143
+const CHAIN_NAME = 'Monad Testnet'
 
 // Types
 export interface MonadMetrics {
@@ -60,7 +51,7 @@ let cachedChartData: ChartDataPoint[] = []
 let lastFetch = 0
 const CACHE_DURATION = 2000 // 2 seconds cache for real-time updates
 
-// Fetch data from Vercel API routes with proper error handling
+// Harici endpointten gerçek veriyi çek
 export async function getMonadMetrics(): Promise<MonadMetrics | null> {
   const now = Date.now()
   
@@ -68,107 +59,95 @@ export async function getMonadMetrics(): Promise<MonadMetrics | null> {
     return cachedMetrics
   }
 
-  try {
-    const apiBaseUrl = getApiBaseUrl()
-    const url = `${apiBaseUrl}/api/monad-metrics`
-    
-    console.log(`🔄 Fetching metrics from: ${url}`)
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache'
-      },
-      cache: 'no-store'
-    })
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    
-    const data = await response.json()
-    
-    if (data.success && data.data) {
+  let lastError = null
+  for (const endpoint of MONAD_RPC_ENDPOINTS) {
+    try {
+      const provider = new ethers.JsonRpcProvider(endpoint, CHAIN_ID)
+      const latestBlockNumber = await provider.getBlockNumber()
+      const feeData = await provider.getFeeData()
+      const latestBlock = await provider.getBlock(latestBlockNumber, true)
+      const previousBlock = await provider.getBlock(latestBlockNumber - 1, true)
+      
+      let tps = 0
+      let blockTime = 0.6
+      let txCount = latestBlock?.transactions?.length || 0
+      
+      if (previousBlock && latestBlock && latestBlock.timestamp > previousBlock.timestamp) {
+        const timeDiff = latestBlock.timestamp - previousBlock.timestamp
+        blockTime = timeDiff
+        if (timeDiff > 0) {
+          tps = Math.round(txCount / timeDiff)
+        }
+      } else if (txCount > 0) {
+        tps = Math.round(txCount / 0.6)
+      }
+      
+      let networkHealth = 95
+      if (txCount > 0) {
+        networkHealth = Math.min(99, 90 + Math.floor((tps / 100) * 9))
+      }
+      if (tps > 50) networkHealth = Math.min(99, networkHealth + 2)
+      if (tps > 100) networkHealth = 99
+      
       cachedMetrics = {
-        tps: data.data.tps,
-        gasPrice: data.data.gasPrice,
-        blockTime: data.data.blockTime,
-        networkHealth: data.data.networkHealth,
-        blockNumber: data.data.blockNumber,
-        timestamp: data.data.timestamp,
-        chainId: data.data.chainId,
-        chainName: data.data.chainName
+        tps: Math.max(tps, 0),
+        gasPrice: feeData.gasPrice ? parseFloat(ethers.formatUnits(feeData.gasPrice, 'gwei')) : 0,
+        blockTime,
+        networkHealth,
+        blockNumber: latestBlockNumber,
+        timestamp: now,
+        chainId: CHAIN_ID,
+        chainName: CHAIN_NAME
       }
       lastFetch = now
       
       console.log('✅ Fresh metrics fetched:', cachedMetrics)
       return cachedMetrics
+      
+    } catch (err) {
+      lastError = err
+      console.warn(`⚠️ RPC endpoint ${endpoint} failed:`, err)
+      continue
     }
-    
-    console.error('❌ API returned unsuccessful response:', data)
-    return cachedMetrics // Return cached data if API response is invalid
-    
-  } catch (error) {
-    console.error('❌ Failed to fetch metrics from API:', error)
-    return cachedMetrics // Return cached data on error
   }
+  
+  console.error('❌ Tüm RPC endpointleri başarısız oldu:', lastError)
+  return cachedMetrics // Return cached data on error
 }
 
 export async function getNetworkStatus() {
-  try {
-    const apiBaseUrl = getApiBaseUrl()
-    const url = `${apiBaseUrl}/api/network-status`
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache'
-      },
-      cache: 'no-store'
-    })
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    
-    const data = await response.json()
-    
-    if (data.success && data.data) {
+  let lastError = null
+  for (const endpoint of MONAD_RPC_ENDPOINTS) {
+    try {
+      const provider = new ethers.JsonRpcProvider(endpoint, CHAIN_ID)
+      const blockNumber = await provider.getBlockNumber()
+      const feeData = await provider.getFeeData()
+      
       return {
-        connected: data.data.connected,
-        chainId: data.data.chainId,
-        blockNumber: data.data.blockNumber,
-        rpcUrl: data.data.rpcUrl,
-        explorerUrl: data.data.explorerUrl,
-        gasPrice: data.data.gasPrice,
-        lastUpdate: new Date(data.data.lastUpdate)
+        connected: true,
+        chainId: CHAIN_ID,
+        blockNumber,
+        rpcUrl: endpoint,
+        explorerUrl: 'https://monad-testnet.socialscan.io',
+        gasPrice: feeData.gasPrice ? parseFloat(ethers.formatUnits(feeData.gasPrice, 'gwei')) : 0,
+        lastUpdate: new Date()
       }
+      
+    } catch (err) {
+      lastError = err
+      continue
     }
-    
-    // Return fallback status
-    return {
-      connected: false,
-      chainId: 10143,
-      blockNumber: 0,
-      rpcUrl: 'Monad Testnet',
-      explorerUrl: 'https://monad-testnet.socialscan.io',
-      gasPrice: 0,
-      lastUpdate: new Date()
-    }
-    
-  } catch (error) {
-    console.error('❌ Failed to fetch network status from API:', error)
-    return {
-      connected: false,
-      chainId: 10143,
-      blockNumber: 0,
-      rpcUrl: 'Monad Testnet',
-      explorerUrl: 'https://monad-testnet.socialscan.io',
-      gasPrice: 0,
-      lastUpdate: new Date()
-    }
+  }
+  
+  console.error('❌ Tüm RPC endpointleri başarısız oldu:', lastError)
+  return {
+    connected: false,
+    chainId: CHAIN_ID,
+    blockNumber: 0,
+    rpcUrl: 'Monad Testnet',
+    explorerUrl: 'https://monad-testnet.socialscan.io',
+    gasPrice: 0,
+    lastUpdate: new Date()
   }
 }
 
@@ -241,6 +220,36 @@ function generateFallbackChartData(): ChartDataPoint[] {
   return fallbackData
 }
 
+export async function getRecentTransactions(): Promise<Transaction[]> {
+  let lastError = null
+  for (const endpoint of MONAD_RPC_ENDPOINTS) {
+    try {
+      const provider = new ethers.JsonRpcProvider(endpoint, CHAIN_ID)
+      const latestBlockNumber = await provider.getBlockNumber()
+      const latestBlock = await provider.getBlock(latestBlockNumber, true)
+      if (!latestBlock || !latestBlock.transactions) continue
+      
+      return latestBlock.transactions.slice(0, 10).map((tx: any) => ({
+        id: tx.hash,
+        type: 'transfer',
+        from: tx.from,
+        to: tx.to,
+        amount: tx.value ? ethers.formatEther(tx.value) : '0',
+        status: 'confirmed',
+        timestamp: latestBlock.timestamp * 1000,
+        gasUsed: tx.gasUsed ? parseInt(tx.gasUsed.toString()) : 0,
+        gasPrice: tx.gasPrice ? parseFloat(ethers.formatUnits(tx.gasPrice, 'gwei')) : 0,
+        blockNumber: latestBlockNumber
+      }))
+    } catch (err) {
+      lastError = err
+      continue
+    }
+  }
+  console.error('Tüm RPC endpointleri başarısız oldu:', lastError)
+  return []
+}
+
 export function generateLiveTransaction(): Transaction {
   const types = ['transfer', 'contract', 'mint', 'swap'] as const
   const addresses = [
@@ -273,13 +282,7 @@ export function tryNextRpc(): void {
 }
 
 export function getAllRpcUrls(): string[] {
-  return [
-    'https://monad-testnet.rpc.hypersync.xyz',
-    'https://10143.rpc.hypersync.xyz',
-    'https://testnet-rpc.monad.xyz',
-    'https://10143.rpc.thirdweb.com',
-    'https://monad-testnet.drpc.org'
-  ]
+  return MONAD_RPC_ENDPOINTS
 }
 
 export async function getValidators() {
@@ -289,8 +292,8 @@ export async function getValidators() {
 
 export async function getChainInfo() {
   return {
-    chainId: 10143,
-    chainName: 'Monad Testnet',
+    chainId: CHAIN_ID,
+    chainName: CHAIN_NAME,
     nativeToken: 'MON'
   }
 }
@@ -314,49 +317,5 @@ export function getExplorerUrl(typeOrHash: string | 'tx' | 'block' | 'address', 
       return `${baseUrl}/address/${hash}`
     default:
       return `${baseUrl}/tx/${hash}`
-  }
-}
-
-export async function getRecentTransactions(): Promise<Transaction[]> {
-  try {
-    const apiBaseUrl = getApiBaseUrl()
-    const url = `${apiBaseUrl}/api/transactions`
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache'
-      },
-      cache: 'no-store'
-    })
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    
-    const data = await response.json()
-    
-    if (data.success && data.data) {
-      return data.data.map((tx: any) => ({
-        id: tx.hash,
-        type: tx.type || 'transfer',
-        from: tx.from,
-        to: tx.to,
-        amount: tx.value,
-        status: tx.status || 'confirmed',
-        timestamp: tx.timestamp * 1000,
-        gasUsed: parseInt(tx.gasUsed),
-        gasPrice: parseFloat(tx.gasPrice),
-        blockNumber: tx.blockNumber
-      }))
-    }
-    
-    // Fallback: generate some sample transactions
-    return Array.from({ length: 5 }, () => generateLiveTransaction())
-    
-  } catch (error) {
-    console.error('❌ Failed to fetch recent transactions:', error)
-    return Array.from({ length: 5 }, () => generateLiveTransaction())
   }
 } 
