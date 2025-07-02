@@ -159,34 +159,23 @@ export async function getChartData(): Promise<ChartDataPoint[]> {
       return cachedChartData.length > 0 ? cachedChartData : generateFallbackChartData()
     }
     
-    // Generate chart data based on current metrics with better variance
+    // Use ONLY real metrics - NO VARIANCE OR MOCK DATA
     const chartPoints: ChartDataPoint[] = []
     
-    // Create 24 data points for better visualization
-    for (let i = 23; i >= 0; i--) {
-      const timestamp = new Date(Date.now() - (i * 2.5 * 60 * 1000)) // Every 2.5 minutes
-      
-      // Add more realistic variance based on network activity
-      const baseVariance = 0.1
-      const activityMultiplier = metrics.networkHealth > 95 ? 1.5 : 0.8
-      
-      const tpsVariance = metrics.tps * baseVariance * activityMultiplier * (Math.random() - 0.5)
-      const gasPriceVariance = metrics.gasPrice * baseVariance * (Math.random() - 0.5)
-      const healthVariance = 3 * (Math.random() - 0.5)
-      
-      chartPoints.push({
-        timestamp: timestamp.toLocaleTimeString('en-US', { 
-          hour12: false, 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        }),
-        tps: Math.max(0, Math.round(metrics.tps + tpsVariance)),
-        gasPrice: Math.max(0, parseFloat((metrics.gasPrice + gasPriceVariance).toFixed(3))),
-        blockTime: metrics.blockTime + (Math.random() - 0.5) * 0.2,
-        networkHealth: Math.max(50, Math.min(100, Math.round(metrics.networkHealth + healthVariance))),
-        blockNumber: metrics.blockNumber - i
-      })
-    }
+    // Create single current data point with REAL metrics only
+    const timestamp = new Date()
+    chartPoints.push({
+      timestamp: timestamp.toLocaleTimeString('en-US', { 
+        hour12: false, 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }),
+      tps: metrics.tps,
+      gasPrice: metrics.gasPrice,
+      blockTime: metrics.blockTime,
+      networkHealth: metrics.networkHealth,
+      blockNumber: metrics.blockNumber
+    })
     
     cachedChartData = chartPoints
     return chartPoints
@@ -198,26 +187,9 @@ export async function getChartData(): Promise<ChartDataPoint[]> {
 }
 
 function generateFallbackChartData(): ChartDataPoint[] {
-  const fallbackData: ChartDataPoint[] = []
-  
-  for (let i = 23; i >= 0; i--) {
-    const timestamp = new Date(Date.now() - (i * 2.5 * 60 * 1000))
-    
-    fallbackData.push({
-      timestamp: timestamp.toLocaleTimeString('en-US', { 
-        hour12: false, 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }),
-      tps: Math.round(45 + Math.random() * 85),
-      gasPrice: parseFloat((0.1 + Math.random() * 0.5).toFixed(3)),
-      blockTime: 0.6 + Math.random() * 0.4,
-      networkHealth: Math.round(90 + Math.random() * 10),
-      blockNumber: 5000000 - i
-    })
-  }
-  
-  return fallbackData
+  // NO MOCK DATA - Return empty array if no real data available
+  console.error('❌ No real data available for chart - returning empty array')
+  return []
 }
 
 export async function getRecentTransactions(): Promise<Transaction[]> {
@@ -250,27 +222,10 @@ export async function getRecentTransactions(): Promise<Transaction[]> {
   return []
 }
 
-export function generateLiveTransaction(): Transaction {
-  const types = ['transfer', 'contract', 'mint', 'swap'] as const
-  const addresses = [
-    '0x742d35Cc7E99E8d2Ba04D1d0700cc52FdbEbF9c1',
-    '0x8ba1f109551bD432803012645Hac136c770e776D',
-    '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
-    '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984'
-  ]
-  
-  return {
-    id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    type: types[Math.floor(Math.random() * types.length)],
-    from: addresses[Math.floor(Math.random() * addresses.length)],
-    to: addresses[Math.floor(Math.random() * addresses.length)],
-    amount: `${(Math.random() * 1000).toFixed(4)} MON`,
-    status: Math.random() > 0.1 ? 'confirmed' : 'pending',
-    timestamp: Date.now(),
-    gasUsed: Math.floor(21000 + Math.random() * 80000),
-    gasPrice: Math.round((0.1 + Math.random() * 0.5) * 1000) / 1000,
-    blockNumber: Math.floor(5000000 + Math.random() * 1000)
-  }
+export function generateLiveTransaction(): Transaction | null {
+  // NO MOCK DATA - This function should not generate fake transactions
+  console.error('❌ generateLiveTransaction called - No mock data allowed')
+  return null
 }
 
 export function getCurrentRpcIndex(): number {
@@ -286,7 +241,8 @@ export function getAllRpcUrls(): string[] {
 }
 
 export async function getValidators() {
-  // Mock validator data for display
+  // NO MOCK DATA - Return empty array, real validator data should come from RPC
+  console.warn('⚠️ No real validator data available from Monad testnet RPC')
   return []
 }
 
