@@ -173,7 +173,7 @@ async function fetchMonadMetrics() {
       return cachedMetrics
     }
     
-    // Fallback data structure
+    // Fallback data structure - THIS IS CRITICAL TO PREVENT UI CRASHES
     return {
       success: false,
       error: 'Failed to fetch real-time data',
@@ -183,7 +183,7 @@ async function fetchMonadMetrics() {
         tps: 0,
         gasPrice: 0,
         blockTime: 0.6,
-        networkHealth: 50,
+        networkHealth: 0,
         blockNumber: 0,
         timestamp: now,
         chainId: MONAD_TESTNET_CONFIG.chainId,
