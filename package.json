@@ -4,9 +4,7 @@
   "description": "Monad Performance Analytics Suite - Real-time blockchain analytics",
   "main": "index.js",
   "scripts": {
-    "build": "cd frontend && npm install && npm run build",
-    "start": "cd frontend && npm start",
-    "dev": "cd frontend && npm run dev"
+    "postinstall": "echo 'Use Vercel Dashboard to deploy with Root Directory: frontend'"
   },
   "keywords": ["monad", "blockchain", "analytics", "dashboard", "performance"],
   "author": "Analytics Developer",
