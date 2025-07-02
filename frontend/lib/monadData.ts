@@ -230,14 +230,14 @@ export async function getRecentTransactions(): Promise<Transaction[]> {
       if (!latestBlock || !latestBlock.transactions) continue
       
       return latestBlock.transactions.slice(0, 10).map((tx: any) => ({
-        id: tx.hash,
+        id: tx.hash || `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         type: 'transfer',
-        from: tx.from,
-        to: tx.to,
+        from: tx.from || '0x0000000000000000000000000000000000000000',
+        to: tx.to || '0x0000000000000000000000000000000000000000',
         amount: tx.value ? ethers.formatEther(tx.value) : '0',
         status: 'confirmed',
         timestamp: latestBlock.timestamp * 1000,
-        gasUsed: tx.gasUsed ? parseInt(tx.gasUsed.toString()) : 0,
+        gasUsed: tx.gasUsed ? parseInt(tx.gasUsed.toString()) : 21000,
         gasPrice: tx.gasPrice ? parseFloat(ethers.formatUnits(tx.gasPrice, 'gwei')) : 0,
         blockNumber: latestBlockNumber
       }))
@@ -264,7 +264,7 @@ export function generateLiveTransaction(): Transaction {
     type: types[Math.floor(Math.random() * types.length)],
     from: addresses[Math.floor(Math.random() * addresses.length)],
     to: addresses[Math.floor(Math.random() * addresses.length)],
-    amount: (Math.random() * 1000).toFixed(4),
+    amount: `${(Math.random() * 1000).toFixed(4)} MON`,
     status: Math.random() > 0.1 ? 'confirmed' : 'pending',
     timestamp: Date.now(),
     gasUsed: Math.floor(21000 + Math.random() * 80000),
