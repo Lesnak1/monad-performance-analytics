@@ -177,8 +177,8 @@ export default function AdvancedFilters({ onFiltersChange, totalResults, isLoadi
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
             <input
               type="text"
-              id="search-transactions"
-              name="searchTransactions"
+              id="main-search"
+              name="main-search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by hash, address, token..."
@@ -303,7 +303,7 @@ export default function AdvancedFilters({ onFiltersChange, totalResults, isLoadi
                   <input
                     type="datetime-local"
                     id="time-range-start"
-                    name="timeRangeStart"
+                    name="time-range-start"
                     value={filters.timeRange.start}
                     onChange={(e) => updateFilter('timeRange', {
                       ...filters.timeRange,
@@ -313,6 +313,8 @@ export default function AdvancedFilters({ onFiltersChange, totalResults, isLoadi
                   />
                   <input
                     type="datetime-local"
+                    id="time-range-end"
+                    name="time-range-end"
                     value={filters.timeRange.end}
                     onChange={(e) => updateFilter('timeRange', {
                       ...filters.timeRange,
@@ -363,7 +365,7 @@ export default function AdvancedFilters({ onFiltersChange, totalResults, isLoadi
                     <input
                       type="number"
                       id="gas-range-min"
-                      name="gasRangeMin"
+                      name="gas-range-min"
                       value={filters.gasRange.min}
                       onChange={(e) => updateFilter('gasRange', {
                         ...filters.gasRange,
@@ -376,7 +378,7 @@ export default function AdvancedFilters({ onFiltersChange, totalResults, isLoadi
                     <input
                       type="number"
                       id="gas-range-max"
-                      name="gasRangeMax"
+                      name="gas-range-max"
                       value={filters.gasRange.max}
                       onChange={(e) => updateFilter('gasRange', {
                         ...filters.gasRange,
@@ -403,6 +405,8 @@ export default function AdvancedFilters({ onFiltersChange, totalResults, isLoadi
                   <div className="flex items-center space-x-4">
                     <input
                       type="number"
+                      id="amount-range-min"
+                      name="amount-range-min"
                       value={filters.amountRange.min}
                       onChange={(e) => updateFilter('amountRange', {
                         ...filters.amountRange,
@@ -414,6 +418,8 @@ export default function AdvancedFilters({ onFiltersChange, totalResults, isLoadi
                     <span className="text-white/40">to</span>
                     <input
                       type="number"
+                      id="amount-range-max"
+                      name="amount-range-max"
                       value={filters.amountRange.max}
                       onChange={(e) => updateFilter('amountRange', {
                         ...filters.amountRange,
@@ -435,6 +441,8 @@ export default function AdvancedFilters({ onFiltersChange, totalResults, isLoadi
                   <span>Status</span>
                 </h4>
                 <select
+                  id="status-filter"
+                  name="status-filter"
                   value={filters.status}
                   onChange={(e) => updateFilter('status', e.target.value)}
                   className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white"
@@ -452,6 +460,8 @@ export default function AdvancedFilters({ onFiltersChange, totalResults, isLoadi
                   <span>Address Type</span>
                 </h4>
                 <select
+                  id="address-type-filter"
+                  name="address-type-filter"
                   value={filters.addressType}
                   onChange={(e) => updateFilter('addressType', e.target.value)}
                   className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white"
@@ -469,6 +479,8 @@ export default function AdvancedFilters({ onFiltersChange, totalResults, isLoadi
                 </h4>
                 <div className="flex space-x-2">
                   <select
+                    id="sort-by-filter"
+                    name="sort-by-filter"
                     value={filters.sortBy}
                     onChange={(e) => updateFilter('sortBy', e.target.value)}
                     className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white"

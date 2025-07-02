@@ -192,9 +192,10 @@ export default function Contact() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-white font-medium mb-2">Name *</label>
+                      <label htmlFor="name" className="block text-white font-medium mb-2">Name *</label>
                       <input
                         type="text"
+                        id="name"
                         name="name"
                         value={formData.name}
                         onChange={handleChange}
@@ -205,9 +206,10 @@ export default function Contact() {
                     </div>
                     
                     <div>
-                      <label className="block text-white font-medium mb-2">Email *</label>
+                      <label htmlFor="email" className="block text-white font-medium mb-2">Email *</label>
                       <input
                         type="email"
+                        id="email"
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
@@ -219,8 +221,9 @@ export default function Contact() {
                   </div>
 
                   <div>
-                    <label className="block text-white font-medium mb-2">Inquiry Type</label>
+                    <label htmlFor="type" className="block text-white font-medium mb-2">Inquiry Type</label>
                     <select
+                      id="type"
                       name="type"
                       value={formData.type}
                       onChange={handleChange}
@@ -236,9 +239,10 @@ export default function Contact() {
                   </div>
 
                   <div>
-                    <label className="block text-white font-medium mb-2">Subject *</label>
+                    <label htmlFor="subject" className="block text-white font-medium mb-2">Subject *</label>
                     <input
                       type="text"
+                      id="subject"
                       name="subject"
                       value={formData.subject}
                       onChange={handleChange}
@@ -249,8 +253,9 @@ export default function Contact() {
                   </div>
 
                   <div>
-                    <label className="block text-white font-medium mb-2">Message *</label>
+                    <label htmlFor="message" className="block text-white font-medium mb-2">Message *</label>
                     <textarea
+                      id="message"
                       name="message"
                       value={formData.message}
                       onChange={handleChange}
