@@ -33,47 +33,44 @@ export default function Dashboard() {
 
   useEffect(() => {
     setMounted(true)
-  }, [])
 
-  useEffect(() => {
-    const fetchData = async () => {
+    // This function fetches data without showing a loading spinner
+    // It's used for silent background refreshes.
+    const updateData = async () => {
       try {
-        // Set loading to true only on initial load
-        if (loading) setLoading(true)
-        
         const [metricsData, chartPoints, status] = await Promise.all([
           getMonadMetrics(),
           getChartData(),
           getNetworkStatus()
         ])
         
-        setNetworkStatus(status)
-        
+        // Only update state if the fetch was successful
+        if (status) {
+          setNetworkStatus(status)
+        }
         if (metricsData) {
           setMetrics(metricsData)
         }
-        
         if (chartPoints && chartPoints.length > 0) {
           setChartData(chartPoints)
         }
-        
       } catch (error) {
-        console.error('❌ Error fetching real data:', error)
-        setNetworkStatus(prev => ({
-          ...prev,
-          connected: false,
-          error: error instanceof Error ? error.message : 'Connection failed'
-        }))
-      } finally {
-        if (loading) setLoading(false)
+        console.error('❌ Error during background data refresh:', error)
+        // On failure, we don't clear old data or show a loading state
       }
     }
 
-    // Initial fetch
-    fetchData()
+    // Initial fetch that shows the main loading indicator
+    const initialFetch = async () => {
+      setLoading(true)
+      await updateData()
+      setLoading(false)
+    }
 
-    // Setup polling for real-time updates
-    const interval = setInterval(fetchData, 4000) // Poll every 4 seconds
+    initialFetch()
+
+    // Setup polling for silent background updates
+    const interval = setInterval(updateData, 4000)
 
     return () => {
       clearInterval(interval)
@@ -351,4 +348,5 @@ export default function Dashboard() {
       <Footer />
     </div>
   )
+} 
 } 
