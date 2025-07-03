@@ -1,7 +1,7 @@
 import { ethers } from 'ethers'
 
-// .env.local dosyasından endpointleri al
-const MONAD_RPC_ENDPOINTS = process.env.NEXT_PUBLIC_MONAD_RPC_ENDPOINTS?.split(',') || [
+// Monad RPC Endpoints - Hardcoded to remove environment variable dependency
+const MONAD_RPC_ENDPOINTS = [
   'https://monad-testnet.rpc.hypersync.xyz',
   'https://10143.rpc.hypersync.xyz',
   'https://testnet-rpc.monad.xyz',
@@ -50,6 +50,7 @@ let cachedMetrics: MonadMetrics | null = null
 let cachedChartData: ChartDataPoint[] = []
 let lastFetch = 0
 const CACHE_DURATION = 2000 // 2 seconds cache for real-time updates
+const MAX_CHART_POINTS = 20 // Maximum number of points to keep for charts
 
 // Harici endpointten gerçek veriyi çek
 export async function getMonadMetrics(): Promise<MonadMetrics | null> {
@@ -156,39 +157,40 @@ export async function getChartData(): Promise<ChartDataPoint[]> {
     const metrics = await getMonadMetrics()
     
     if (!metrics) {
-      return cachedChartData.length > 0 ? cachedChartData : generateFallbackChartData()
+      return cachedChartData.length > 0 ? cachedChartData : []
     }
     
-    // Use ONLY real metrics - NO VARIANCE OR MOCK DATA
-    const chartPoints: ChartDataPoint[] = []
-    
-    // Create single current data point with REAL metrics only
+    // Create new data point with current timestamp
     const timestamp = new Date()
-    chartPoints.push({
+    const newDataPoint: ChartDataPoint = {
       timestamp: timestamp.toLocaleTimeString('en-US', { 
         hour12: false, 
         hour: '2-digit', 
-        minute: '2-digit' 
+        minute: '2-digit',
+        second: '2-digit'
       }),
       tps: metrics.tps,
       gasPrice: metrics.gasPrice,
       blockTime: metrics.blockTime,
       networkHealth: metrics.networkHealth,
       blockNumber: metrics.blockNumber
-    })
+    }
     
-    cachedChartData = chartPoints
-    return chartPoints
+    // Add new point to beginning of array and keep only the latest points
+    cachedChartData = [newDataPoint, ...cachedChartData.slice(0, MAX_CHART_POINTS - 1)]
+    
+    console.log(`📊 Chart data updated: ${cachedChartData.length} points, TPS: ${metrics.tps}`)
+    return cachedChartData
     
   } catch (error) {
     console.error('❌ Failed to generate chart data:', error)
-    return cachedChartData.length > 0 ? cachedChartData : generateFallbackChartData()
+    return cachedChartData.length > 0 ? cachedChartData : []
   }
 }
 
 function generateFallbackChartData(): ChartDataPoint[] {
-  // NO MOCK DATA - Return empty array if no real data available
-  console.error('❌ No real data available for chart - returning empty array')
+  // Return empty array if no real data available
+  console.warn('⚠️ No real data available for chart')
   return []
 }
 
@@ -198,33 +200,76 @@ export async function getRecentTransactions(): Promise<Transaction[]> {
     try {
       const provider = new ethers.JsonRpcProvider(endpoint, CHAIN_ID)
       const latestBlockNumber = await provider.getBlockNumber()
-      const latestBlock = await provider.getBlock(latestBlockNumber, true)
-      if (!latestBlock || !latestBlock.transactions) continue
       
-      return latestBlock.transactions.slice(0, 10).map((tx: any) => ({
-        id: tx.hash || `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        type: 'transfer',
-        from: tx.from || '0x0000000000000000000000000000000000000000',
-        to: tx.to || '0x0000000000000000000000000000000000000000',
-        amount: tx.value ? ethers.formatEther(tx.value) : '0',
-        status: 'confirmed',
-        timestamp: latestBlock.timestamp * 1000,
-        gasUsed: tx.gasUsed ? parseInt(tx.gasUsed.toString()) : 21000,
-        gasPrice: tx.gasPrice ? parseFloat(ethers.formatUnits(tx.gasPrice, 'gwei')) : 0,
-        blockNumber: latestBlockNumber
-      }))
+      // Get multiple recent blocks to have more transactions
+      const blocks = []
+      for (let i = 0; i < 3; i++) {
+        const blockNum = latestBlockNumber - i
+        if (blockNum > 0) {
+          const block = await provider.getBlock(blockNum, true)
+          if (block && block.transactions) {
+            blocks.push(block)
+          }
+        }
+      }
+      
+      // Collect all transactions from recent blocks
+      const allTransactions: Transaction[] = []
+      
+      for (const block of blocks) {
+        if (block.transactions && block.transactions.length > 0) {
+          for (const txHash of block.transactions.slice(0, 5)) {
+            try {
+              const txReceipt = await provider.getTransaction(txHash)
+              if (txReceipt) {
+                // Determine transaction type based on data and to address
+                let txType: 'transfer' | 'contract' | 'mint' | 'swap' = 'transfer'
+                if (txReceipt.data && txReceipt.data !== '0x') {
+                  txType = 'contract'
+                  // Simple heuristics for transaction types
+                  if (txReceipt.data.includes('a9059cbb')) txType = 'transfer' // ERC20 transfer
+                  if (txReceipt.data.includes('7ff36ab5')) txType = 'swap' // Uniswap swap
+                  if (txReceipt.data.includes('40c10f19')) txType = 'mint' // Mint function
+                }
+                
+                allTransactions.push({
+                  id: txReceipt.hash,
+                  type: txType,
+                  from: txReceipt.from,
+                  to: txReceipt.to || '0x0000000000000000000000000000000000000000',
+                  amount: txReceipt.value ? parseFloat(ethers.formatEther(txReceipt.value)).toFixed(4) + ' MON' : '0 MON',
+                  status: 'confirmed',
+                  timestamp: block.timestamp * 1000,
+                  gasUsed: txReceipt.gasLimit ? parseInt(txReceipt.gasLimit.toString()) : 21000,
+                  gasPrice: txReceipt.gasPrice ? parseFloat(ethers.formatUnits(txReceipt.gasPrice, 'gwei')) : 0,
+                  blockNumber: block.number
+                })
+              }
+            } catch (txError) {
+              console.warn(`⚠️ Failed to fetch transaction ${txHash}:`, txError)
+              continue
+            }
+          }
+        }
+      }
+      
+      // Return up to 10 most recent transactions
+      return allTransactions.slice(0, 10)
+      
     } catch (err) {
       lastError = err
+      console.warn(`⚠️ RPC endpoint ${endpoint} failed for transactions:`, err)
       continue
     }
   }
-  console.error('Tüm RPC endpointleri başarısız oldu:', lastError)
+  
+  console.error('❌ All RPC endpoints failed for transactions:', lastError)
   return []
 }
 
 export function generateLiveTransaction(): Transaction | null {
-  // NO MOCK DATA - This function should not generate fake transactions
-  console.error('❌ generateLiveTransaction called - No mock data allowed')
+  // Completely remove mock data generation
+  console.warn('⚠️ generateLiveTransaction called - returning null (no mock data)')
   return null
 }
 

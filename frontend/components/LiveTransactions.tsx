@@ -14,7 +14,7 @@ import {
   Users,
   Zap
 } from 'lucide-react'
-import { generateLiveTransaction, getExplorerUrl, getRecentTransactions, getMonadMetrics, type Transaction } from '../lib/monadData'
+import { getExplorerUrl, getRecentTransactions, getMonadMetrics, type Transaction } from '../lib/monadData'
 import { safeToLocaleString, formatGasPrice } from '../lib/utils'
 
 interface LiveTransactionsProps {
@@ -37,63 +37,41 @@ export default function LiveTransactions({ isPlaying = true, onToggle }: LiveTra
   // Fetch real transactions directly from RPC endpoints
   const fetchTransactions = async () => {
     try {
-      console.log('🔄 Fetching real transactions from Monad RPC...')
       const recentTransactions = await getRecentTransactions()
       
       if (recentTransactions && recentTransactions.length > 0) {
-        console.log(`✅ Got ${recentTransactions.length} real transactions from Monad testnet`)
-        
-        // Add new transactions to the feed
         setTransactions(prev => {
           const combined = [...recentTransactions, ...prev]
-          // Remove duplicates by transaction hash
           const unique = combined.filter((tx, index, self) => 
             index === self.findIndex(t => t.id === tx.id)
           )
-          return unique.slice(0, 20) // Keep latest 20
+          return unique.slice(0, 20)
         })
         
-        // Update stats with real data
-        const avgGas = recentTransactions.length > 0 ? 
-          recentTransactions.reduce((sum, tx) => sum + tx.gasPrice, 0) / recentTransactions.length : 
-          0
-          
+        const avgGas = recentTransactions.reduce((sum, tx) => sum + tx.gasPrice, 0) / recentTransactions.length
         setStats(prev => ({
           ...prev,
-          avgGasPrice: avgGas > 0 ? avgGas : prev.avgGasPrice
+          avgGasPrice: avgGas > 0 ? avgGas : prev.avgGasPrice,
+          totalTxs: prev.totalTxs + recentTransactions.length
         }))
-      } else {
-        console.log('ℹ️ No transactions available in current blocks')
-        // Generate some visual transactions for demo purposes
-        const demoTx = generateLiveTransaction()
-        setTransactions(prev => [demoTx, ...prev.slice(0, 19)])
       }
     } catch (error) {
       console.error('❌ Error fetching real transactions:', error)
-      // Generate some visual transactions for demo purposes
-      const demoTx = generateLiveTransaction()
-      setTransactions(prev => [demoTx, ...prev.slice(0, 19)])
     }
   }
-
-  // Fetch network stats directly from RPC endpoints
+  
   const fetchNetworkStats = async () => {
     try {
       const metrics = await getMonadMetrics()
       if (metrics) {
-        const currentTPS = metrics.tps || 0
-        const currentBlockNumber = metrics.blockNumber || 0
-        const currentGasPrice = metrics.gasPrice || 0
-        
-        // Calculate realistic stats based on current network activity
-        const estimatedDailyTxs = Math.round(currentTPS * 86400) // TPS * seconds in day
+        const estimatedDailyTxs = Math.round(metrics.tps * 86400)
         
         setStats(prev => ({
           ...prev,
-          totalTxs: Math.max(currentBlockNumber, prev.totalTxs || 0),
+          totalTxs: Math.max(metrics.blockNumber, prev.totalTxs || 0),
           txsLast24h: Math.max(estimatedDailyTxs, prev.txsLast24h || 0),
-          avgGasPrice: currentGasPrice > 0 ? currentGasPrice : prev.avgGasPrice,
-          successRate: 98.2 + Math.random() * 1.5 // Realistic success rate variation
+          avgGasPrice: metrics.gasPrice > 0 ? metrics.gasPrice : prev.avgGasPrice,
+          successRate: 98.2 + Math.random() * 1.5
         }))
       }
     } catch (error) {
@@ -101,7 +79,6 @@ export default function LiveTransactions({ isPlaying = true, onToggle }: LiveTra
     }
   }
 
-  // Enhanced transaction fetching with better stats handling
   useEffect(() => {
     if (!isRunning) return
 
@@ -116,7 +93,7 @@ export default function LiveTransactions({ isPlaying = true, onToggle }: LiveTra
       if (Math.random() < 0.4) {
         fetchNetworkStats()
       }
-    }, 3000) // Reduced frequency to 3 seconds
+    }, 5000) // Poll every 5 seconds
 
     return () => clearInterval(interval)
   }, [isRunning])

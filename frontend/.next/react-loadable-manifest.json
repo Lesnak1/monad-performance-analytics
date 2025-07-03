@@ -1,41 +1,38 @@
 {
   "lib\\export.ts -> html2canvas": {
-    "id": 61120,
+    "id": "lib\\export.ts -> html2canvas",
     "files": [
-      "static/chunks/ad7f724d.f8913d2889cdae0f.js"
+      "static/chunks/node_modules_html2canvas_dist_html2canvas_js.js"
     ]
   },
   "lib\\export.ts -> jspdf": {
-    "id": 91819,
+    "id": "lib\\export.ts -> jspdf",
     "files": [
-      "static/chunks/e78312c5.0e28a31c5dc560c5.js",
-      "static/chunks/412.57253d412c7bf242.js"
+      "static/chunks/node_modules_jspdf_dist_jspdf_es_min_js.js"
     ]
   },
   "lib\\export.ts -> xlsx": {
-    "id": 84105,
+    "id": "lib\\export.ts -> xlsx",
     "files": [
-      "static/chunks/674a26a7.19df053ce34d7e30.js",
-      "static/chunks/919.309cb8bf58085118.js"
+      "static/chunks/node_modules_xlsx_xlsx_mjs.js"
     ]
   },
   "node_modules\\jspdf\\dist\\jspdf.es.min.js -> canvg": {
-    "id": 34668,
+    "id": "node_modules\\jspdf\\dist\\jspdf.es.min.js -> canvg",
     "files": [
-      "static/chunks/72a30a16.12f05394f2805773.js",
-      "static/chunks/385.e297e42b773b95e9.js"
+      "static/chunks/node_modules_canvg_lib_index_es_js.js"
     ]
   },
   "node_modules\\jspdf\\dist\\jspdf.es.min.js -> dompurify": {
-    "id": 22424,
+    "id": "node_modules\\jspdf\\dist\\jspdf.es.min.js -> dompurify",
     "files": [
-      "static/chunks/424.0ef20266bd7778bf.js"
+      "static/chunks/node_modules_dompurify_dist_purify_es_mjs.js"
     ]
   },
   "node_modules\\jspdf\\dist\\jspdf.es.min.js -> html2canvas": {
-    "id": 61120,
+    "id": "node_modules\\jspdf\\dist\\jspdf.es.min.js -> html2canvas",
     "files": [
-      "static/chunks/ad7f724d.f8913d2889cdae0f.js"
+      "static/chunks/node_modules_html2canvas_dist_html2canvas_js.js"
     ]
   }
 }

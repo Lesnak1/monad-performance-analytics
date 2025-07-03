@@ -38,8 +38,8 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true)
-        console.log('🔄 Fetching real-time Monad data...')
+        // Set loading to true only on initial load
+        if (loading) setLoading(true)
         
         const [metricsData, chartPoints, status] = await Promise.all([
           getMonadMetrics(),
@@ -51,20 +51,10 @@ export default function Dashboard() {
         
         if (metricsData) {
           setMetrics(metricsData)
-          console.log('✅ Real metrics updated:', {
-            tps: metricsData.tps,
-            gasPrice: metricsData.gasPrice,
-            blockNumber: metricsData.blockNumber
-          })
-        } else {
-          console.warn('⚠️ No real metrics data available - connection issue')
         }
         
         if (chartPoints && chartPoints.length > 0) {
           setChartData(chartPoints)
-          console.log(`✅ Chart data updated with ${chartPoints.length} real data points`)
-        } else {
-          console.warn('⚠️ No real chart data available')
         }
         
       } catch (error) {
@@ -75,13 +65,19 @@ export default function Dashboard() {
           error: error instanceof Error ? error.message : 'Connection failed'
         }))
       } finally {
-        setLoading(false)
+        if (loading) setLoading(false)
       }
     }
 
+    // Initial fetch
     fetchData()
-    const interval = setInterval(fetchData, 6000) // Increased to 6 seconds to reduce load
-    return () => clearInterval(interval)
+
+    // Setup polling for real-time updates
+    const interval = setInterval(fetchData, 4000) // Poll every 4 seconds
+
+    return () => {
+      clearInterval(interval)
+    }
   }, [])
 
   if (!mounted) return null
