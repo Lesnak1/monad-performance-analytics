@@ -1,7 +1,5 @@
 # 🚀 MPAS - Monad Performance Analytics Suite
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_USERNAME/monad-performance-analytics)
-
 > **🎉 Real-time blockchain performance monitoring and analytics platform for Monad Testnet with **interactive features** and **community-focused insights**!
 
 ## 🎯 **Key Features**
@@ -53,11 +51,6 @@ Track the growing Monad protocol landscape:
 - Wormhole (Bridge protocol)
 - Chainlink (Oracles)
 
-### 🌐 **Public Access**
-
-**Live Dashboard:** [Your deployment URL here]
-**Demo:** Fully functional with no login required 🎉
-
 ### 🛠 **Technical Stack**
 
 **Frontend:**
@@ -78,41 +71,6 @@ Track the growing Monad protocol landscape:
 - Dark theme with cyber aesthetics
 - Export functionality (CSV, PDF)
 - Sound effects and interactions
-
-## 🚀 **Quick Start**
-
-### **Local Development**
-```bash
-# Clone the repository
-git clone [your-repo-url]
-cd monad-performance-analytics
-
-# Install dependencies and start
-cd frontend
-npm install
-npm run dev
-
-# Open http://localhost:3000
-```
-
-### **Deployment Options**
-
-#### **Vercel (Recommended)**
-```bash
-# 1. Push to GitHub
-git add .
-git commit -m "Deploy MPAS Analytics"
-git push origin main
-
-# 2. Deploy on Vercel
-# https://vercel.com/new -> Import your GitHub repo
-```
-
-#### **Netlify**
-```bash
-# Build command: npm run build
-# Publish directory: frontend/.next
-```
 
 ## 📱 **Platform Highlights**
 
@@ -174,12 +132,6 @@ MPAS Analytics Platform
 - **User-Friendly**: Intuitive navigation and clear metrics
 - **Accessible**: Works for both beginners and experts
 
-## 🔗 **Resources**
-
-- **📖 Documentation**: [Link to detailed docs]
-- **🐛 Issues**: [GitHub Issues]
-- **💬 Community**: [Discord/Telegram]
-- **🔄 Updates**: [Release Notes]
 
 ## 🎉 **Built for the Community**
 
